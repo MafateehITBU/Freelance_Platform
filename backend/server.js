@@ -1,12 +1,14 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 
 // Import config and database connection
-const connectDB = require('./config/database');
-const config = require('./config/config');
+import connectDB from './config/database.js';
+import config from './config/config.js';
 
 const app = express();
 
