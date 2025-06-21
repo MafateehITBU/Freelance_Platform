@@ -1,20 +1,23 @@
-// TODO: Implement utility functions
-// This is a placeholder file - you will add the actual utility functions later
-
-const generateId = () => {
-  // TODO: Implement ID generation
+const helpers = {
+  validateEmail: (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  },
+  validatePhone: (phone) => {
+    const re = /^07[789]\d{7}$/;
+    return re.test(phone);
+  },
+  validatePassword: (password) => {
+    const re = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return re.test(password);
+  },
+  validateDOB: (dob) => {
+    const today = new Date();
+    const birthDate = new Date(dob);
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    return age >= 16 || (age === 16 && m >= 0);
+  },
 };
 
-const formatDate = (date) => {
-  // TODO: Implement date formatting
-};
-
-const validateEmail = (email) => {
-  // TODO: Implement email validation
-};
-
-module.exports = {
-  generateId,
-  formatDate,
-  validateEmail
-}; 
+export default helpers;

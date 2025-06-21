@@ -1,7 +1,7 @@
 // TODO: Define application constants
 // This is a placeholder file - you will add the actual constants later
 
-module.exports = {
+export default {
   // User roles
   ROLES: {
     CLIENT: 'client',
