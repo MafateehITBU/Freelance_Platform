@@ -1,4 +1,4 @@
-import Freelancer from "../models/Freelancer.js";
+import Influencer from "../models/Influencer.js";
 import fs from "fs";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import helpers from "../utils/helpers.js";
@@ -13,66 +13,67 @@ import {
 import { transporter } from "../utils/nodemailer.js";
 
 /**-----------------------------------------
- *  @desc Add a new Freelancer
- *  @route POST /api/freelancer
- * @access Public
+ *  @desc Add a new Influencer
+ *  @route POST /api/influencer
+ *  @access Public
  ------------------------------------------*/
-export const addFreelancer = async (req, res) => {
+export const addInfluencer = async (req, res) => {
     try {
-        const { name, email, password, phone, dateOfBirth } = req.body;
+        const { name, email, password, phone, dateOfBirth, socialMediaLinks } = req.body;
 
-        // validate required fields
+        // Validate required fields
         if (!name || !email || !password || !phone || !dateOfBirth) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-        // Check if freelancer already exists
-        const existingFreelancer = await Freelancer.findOne({ email: email.toLowerCase() });
-        if (existingFreelancer) {
-            return res.status(400).json({ message: "Freelancer already exists" });
+        // Check if influencer already exists
+        const existingInfluencer = await Influencer.findOne({ email: email.toLowerCase() });
+        if (existingInfluencer) {
+            return res.status(400).json({ message: "Influencer already exists" });
         }
 
-        // validate email format
+        // Validate formats
         if (!helpers.validateEmail(email)) {
             return res.status(400).json({ message: "Invalid email format" });
         }
-        // validate phone number format
         if (!helpers.validatePhone(phone)) {
             return res.status(400).json({ message: "Invalid phone number format" });
         }
-        // validate date of birth format
         if (!helpers.validateDOB(dateOfBirth)) {
             return res.status(400).json({ message: "Invalid date of birth format" });
         }
 
-        // check if pdf and profilePicture and personalIdImage are provided
+        // Handle image uploads
         let profilePictureUrl = null;
         let personalIdImageUrl = null;
-        let portfolioUrls = [];
 
         const files = req.files;
 
         if (files?.profilePicture?.[0]) {
-            const uploaded = await uploadToCloudinary(files.profilePicture[0].path, 'image');
-            profilePictureUrl = uploaded;
+            profilePictureUrl = await uploadToCloudinary(files.profilePicture[0].path, 'image');
         }
 
         if (files?.personalIdImage?.[0]) {
-            const uploaded = await uploadToCloudinary(files.personalIdImage[0].path, 'image');
-            personalIdImageUrl = uploaded;
+            personalIdImageUrl = await uploadToCloudinary(files.personalIdImage[0].path, 'image');
         } else {
             return res.status(400).json({ message: "Personal ID image is required." });
         }
 
-        if (files?.portfolio) {
-            for (const file of files.portfolio) {
-                const uploaded = await uploadToCloudinary(file.path, 'raw');
-                portfolioUrls.push(uploaded);
+        // Parse social media links safely
+        let parsedSocialLinks = [];
+        if (socialMediaLinks) {
+            try {
+                parsedSocialLinks = JSON.parse(socialMediaLinks);
+                if (!Array.isArray(parsedSocialLinks)) {
+                    return res.status(400).json({ message: "Social media links must be an array." });
+                }
+            } catch (err) {
+                return res.status(400).json({ message: "Invalid JSON format for socialMediaLinks." });
             }
         }
 
-        // Create freelancer
-        const newFreelancer = new Freelancer({
+        // Create and save influencer
+        const newInfluencer = new Influencer({
             name,
             email: email.toLowerCase(),
             password,
@@ -80,27 +81,28 @@ export const addFreelancer = async (req, res) => {
             dateOfBirth,
             profilePicture: profilePictureUrl,
             personalIdImage: personalIdImageUrl,
-            portfolio: portfolioUrls
+            socialMediaLinks: parsedSocialLinks,
         });
 
-        await newFreelancer.save();
+        await newInfluencer.save();
 
         res.status(201).json({
-            message: "Freelancer registered successfully.",
-            freelancer: newFreelancer
+            message: "Influencer registered successfully.",
+            influencer: newInfluencer
         });
+
     } catch (error) {
-        console.error("Error adding freelancer:", error);
+        console.error("Error adding influencer:", error);
         res.status(500).json({ message: "Internal server error" });
     }
-}
+};
 
 /**-----------------------------------------
- *  @desc Freelancer Login
- * @route POST /api/freelancer/freelancer/login
+ *  @desc Influencer Login
+ * @route POST /api/Influencer/influencer/login
  * @access Public
  ------------------------------------------*/
-export const freelancerLogin = async (req, res) => {
+export const influencerLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -109,24 +111,24 @@ export const freelancerLogin = async (req, res) => {
             return res.status(400).json({ message: "Email and password are required" });
         }
 
-        // Check if freelancer exists
-        const freelancer = await Freelancer.findOne({ email: email.toLowerCase() });
-        if (!freelancer) {
-            return res.status(404).json({ message: "Freelancer not found" });
+        // Check if Influencer exists
+        const influencer = await Influencer.findOne({ email: email.toLowerCase() });
+        if (!influencer) {
+            return res.status(404).json({ message: "Influencer not found" });
         }
 
         // Check if password matches
-        const isMatch = await bcrypt.compare(password, freelancer.password);
+        const isMatch = await bcrypt.compare(password, influencer.password);
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        if (!freelancer.verified) {
+        if (!influencer.verified) {
             return res.status(403).json({ message: "Your account is not verified. Please contact support." });
         }
 
         // Generate JWT token
-        const token = jwt.sign({ id: freelancer._id, role: 'freelancer' }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign({ id: influencer._id, role: 'influencer' }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         res.status(200).json({
             message: "Login successful",
@@ -139,49 +141,49 @@ export const freelancerLogin = async (req, res) => {
 }
 
 /**-----------------------------------------
- *  @desc Get All Freelancers
- * @route GET /api/freelancer
+ *  @desc Get All Influencer
+ * @route GET /api/influencer
  * @access Private
  * @role Admin
  ------------------------------------------*/
-export const getAllFreelancers = async (req, res) => {
+export const getAllInfluencer = async (req, res) => {
     try {
-        const freelancers = await Freelancer.find().select('-password');
-        res.status(200).json(freelancers);
+        const influencer = await Influencer.find().select('-password');
+        res.status(200).json(influencer);
     } catch (error) {
-        console.error("Error fetching freelancers:", error);
+        console.error("Error fetching Influencer:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
 
 /**-----------------------------------------
- *  @desc Get Freelancer by ID
- * @route GET /api/freelancer/:id
+ *  @desc Get Influencer by ID
+ * @route GET /api/influencer/:id
  ------------------------------------------*/
-export const getFreelancerById = async (req, res) => {
+export const getInfluencerById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if freelancer exists
-        const freelancer = await Freelancer.findById(id).select('-password');
-        if (!freelancer) {
-            return res.status(404).json({ message: "Freelancer not found" });
+        // Check if Influencer exists
+        const influencer = await Influencer.findById(id).select('-password');
+        if (!influencer) {
+            return res.status(404).json({ message: "Influencer not found" });
         }
 
-        res.status(200).json(freelancer);
+        res.status(200).json(influencer);
     } catch (error) {
-        console.error("Error fetching freelancer:", error);
+        console.error("Error fetching Influencer:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
 
 /**-----------------------------------------
- *  @desc Update Freelancer
- * @route PUT /api/freelancer/:id
+ *  @desc Update Influencer
+ * @route PUT /api/influencer/:id
  * @access Private
- * @role Freelancer, Admin
+ * @role Influencer, Admin
  ------------------------------------------*/
-export const updateFreelancer = async (req, res) => {
+export const updateInfluencer = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, email, phone, dateOfBirth } = req.body;
@@ -221,51 +223,44 @@ export const updateFreelancer = async (req, res) => {
             updateFields.personalIdImage = idUrl;
         }
 
-        // Upload portfolio PDF if provided
-        if (req.files?.portfolio) {
-            const pdf = req.files.portfolio[0];
-            const pdfUrl = await uploadToCloudinary(pdf.path, "raw");
-            updateFields.$push = { portfolio: pdfUrl };
-        }
-
-        const updatedFreelancer = await Freelancer.findByIdAndUpdate(id, updateFields, {
+        const updatedInfluencer = await Influencer.findByIdAndUpdate(id, updateFields, {
             new: true,
         });
 
-        if (!updatedFreelancer) {
-            return res.status(404).json({ message: "Freelancer not found" });
+        if (!updatedInfluencer) {
+            return res.status(404).json({ message: "Influencer not found" });
         }
 
-        res.status(200).json({ message: "Freelancer updated successfully", freelancer: updatedFreelancer });
+        res.status(200).json({ message: "Influencer updated successfully", Influencer: updatedInfluencer });
     } catch (error) {
-        console.error("Error updating freelancer:", error);
+        console.error("Error updating Influencer:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
 
 /**-----------------------------------------
- * @desc Send OTP for Freelancer
- * @route POST /api/freelancer/send-otp
+ * @desc Send OTP for Influencer
+ * @route POST /api/influencer/send-otp
  ------------------------------------------*/
 export const sendOTP = async (req, res) => {
     try {
         const { email } = req.body;
         const lowercaseEmail = email.toLowerCase();
-        const freelancer = await Freelancer.findOne({ email: lowercaseEmail });
+        const influencer = await Influencer.findOne({ email: lowercaseEmail });
 
-        if (!freelancer) {
-            return res.status(404).json({ error: "freelancer not found" });
+        if (!influencer) {
+            return res.status(404).json({ error: "Influencer not found" });
         }
 
         const otp = generateOTP();
-        freelancer.otp = otp;
-        freelancer.otpExpiresAt = getOTPExpiry();
-        await freelancer.save();
+        influencer.otp = otp;
+        influencer.otpExpiresAt = getOTPExpiry();
+        await influencer.save();
 
         await sendOTPEmail({
             to: lowercaseEmail,
             otp,
-            emailUser: process.env.EMAIL_FREELANCER,
+            emailUser: process.env.EMAIL_Influencer,
         });
 
         res.status(200).json({ message: "OTP sent successfully" });
@@ -277,19 +272,19 @@ export const sendOTP = async (req, res) => {
 
 /**-----------------------------------------
  * @desc Verify OTP
- * @route POST /api/freelancer/verify-otp
+ * @route POST /api/influencer/verify-otp
  ------------------------------------------*/
 export const verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
         const lowercaseEmail = email.toLowerCase();
-        const freelancer = await Freelancer.findOne({ email: lowercaseEmail });
+        const influencer = await Influencer.findOne({ email: lowercaseEmail });
 
-        if (!freelancer) {
-            return res.status(404).json({ error: "freelancer not found" });
+        if (!influencer) {
+            return res.status(404).json({ error: "Influencer not found" });
         }
 
-        if (!verifyOTPMatch(freelancer, otp)) {
+        if (!verifyOTPMatch(influencer, otp)) {
             return res.status(401).json({ error: "Invalid OTP" });
         }
 
@@ -300,10 +295,10 @@ export const verifyOTP = async (req, res) => {
 };
 
 /**-----------------------------------------
- * @desc Update freelancer Password
- * @route PUT /api/freelancer/update-password
+ * @desc Update Influencer Password
+ * @route PUT /api/influencer/update-password
  ------------------------------------------*/
-export const updateFreelancerPassword = async (req, res) => {
+export const updateInfluencerPassword = async (req, res) => {
     const { email, newPassword, confirmPassword } = req.body;
 
     // Check if both fields are provided
@@ -325,15 +320,15 @@ export const updateFreelancerPassword = async (req, res) => {
 
     try {
         const lowercaseEmail = email.toLowerCase();
-        const freelancer = await Freelancer.findOne({ email: lowercaseEmail });
+        const influencer = await Influencer.findOne({ email: lowercaseEmail });
 
-        if (!freelancer) {
-            return res.status(404).json({ error: 'freelancer not found' });
+        if (!influencer) {
+            return res.status(404).json({ error: 'Influencer not found' });
         }
 
-        freelancer.password = newPassword; // hashing will happen automatically in pre-save
+        influencer.password = newPassword; // hashing will happen automatically in pre-save
 
-        await freelancer.save();
+        await influencer.save();
 
         return res.status(200).json({ message: "Password updated successfully" });
     } catch (error) {
@@ -343,39 +338,39 @@ export const updateFreelancerPassword = async (req, res) => {
 };
 
 /**-----------------------------------------
- *  @desc Toggle verification status of a freelancer
- * @route PUT /api/freelancer/:id/verify
+ *  @desc Toggle verification status of a Influencer
+ * @route PUT /api/influencer/:id/verify
  * @access Private
  * @role Admin
  ------------------------------------------*/
-export const toggleFreelancerVerification = async (req, res) => {
+export const toggleInfluencerVerification = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if freelancer exists
-        const freelancer = await Freelancer.findById(id);
-        if (!freelancer) {
-            return res.status(404).json({ message: "Freelancer not found" });
+        // Check if Influencer exists
+        const influencer = await Influencer.findById(id);
+        if (!influencer) {
+            return res.status(404).json({ message: "Influencer not found" });
         }
 
         // Toggle verification status
-        freelancer.verified = !freelancer.verified;
-        await freelancer.save();
+        influencer.verified = !influencer.verified;
+        await influencer.save();
 
         // Send a mail notification
-        const subject = freelancer.verified ? "Freelancer Verified" : "Freelancer Unverified";
-        const text = `Dear ${freelancer.name},\n\nYour account has been ${freelancer.verified ? 'verified' : 'unverified'} by the admin.\n\nThank you!`;
+        const subject = influencer.verified ? "Influencer Verified" : "Influencer Unverified";
+        const text = `Dear ${influencer.name},\n\nYour account has been ${influencer.verified ? 'verified' : 'unverified'} by the admin.\n\nThank you!`;
         const mailOptions = {
             from: "Freelance Platform",
-            to: freelancer.email,
+            to: influencer.email,
             subject,
             text,
         };
         await transporter.sendMail(mailOptions);
 
         res.status(200).json({
-            message: `Freelancer ${freelancer.verified ? 'verified' : 'unverified'} successfully`,
-            freelancer
+            message: `Influencer ${influencer.verified ? 'verified' : 'unverified'} successfully`,
+            influencer
         });
     } catch (error) {
         console.error("Error toggling verification:", error);
@@ -384,27 +379,27 @@ export const toggleFreelancerVerification = async (req, res) => {
 }
 
 /**-----------------------------------------
- *  @desc Delete Freelancer
- * @route DELETE /api/freelancer/:id
+ *  @desc Delete Influencer
+ * @route DELETE /api/influencer/:id
  * @access Private
  * @role Admin
  ------------------------------------------*/
-export const deleteFreelancer = async (req, res) => {
+export const deleteInfluencer = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if freelancer exists
-        const freelancer = await Freelancer.findById(id);
-        if (!freelancer) {
-            return res.status(404).json({ message: "Freelancer not found" });
+        // Check if Influencer exists
+        const influencer = await Influencer.findById(id);
+        if (!influencer) {
+            return res.status(404).json({ message: "Influencer not found" });
         }
 
-        // Delete freelancer
-        await Freelancer.findByIdAndDelete(id);
+        // Delete Influencer
+        await Influencer.findByIdAndDelete(id);
 
-        res.status(200).json({ message: "Freelancer deleted successfully" });
+        res.status(200).json({ message: "Influencer deleted successfully" });
     } catch (error) {
-        console.error("Error deleting freelancer:", error);
+        console.error("Error deleting Influencer:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }

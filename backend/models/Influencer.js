@@ -34,9 +34,10 @@ const influencerSchema = new mongoose.Schema({
         required: true,
     },
     subscription: {
-        type: String,
+        type: Boolean,
+        default: false,
     },
-    socialMdeiaLinks: [{
+    socialMediaLinks: [{
         platform: {
             type: String,
             required: true,
@@ -51,6 +52,14 @@ const influencerSchema = new mongoose.Schema({
     verified: {
         type: Boolean,
         default: false,
+    },
+    otp: {
+        type: String,
+        default: null,
+    },
+    otpExpiresAt: {
+        type: Date,
+        default: null,
     },
 }, {
     timestamps: true,

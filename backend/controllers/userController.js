@@ -48,14 +48,7 @@ export const registerUser = async (req, res) => {
         // If profile picture is provided, upload it
         let profilePictureUrl = null;
         if (req.file) {
-            try {
-                profilePictureUrl = await uploadToCloudinary(req.file.path);
-                // Delete the local file after uploading
-                fs.unlinkSync(req.file.path);
-            } catch (error) {
-                console.error('Error uploading profile picture:', error);
-                return res.status(500).json({ message: "Failed to upload profile picture" });
-            }
+            profilePictureUrl = await uploadToCloudinary(req.file.path);
         }
 
         // Create new user
@@ -189,14 +182,7 @@ export const updateUserProfile = async (req, res) => {
         // If profile picture is provided, upload it
         let profilePictureUrl = null;
         if (req.file) {
-            try {
-                profilePictureUrl = await uploadToCloudinary(req.file.path);
-                // Delete the local file after uploading
-                fs.unlinkSync(req.file.path);
-            } catch (error) {
-                console.error('Error uploading profile picture:', error);
-                return res.status(500).json({ message: "Failed to upload profile picture" });
-            }
+            profilePictureUrl = await uploadToCloudinary(req.file.path);
         }
 
         if (profilePictureUrl) {
