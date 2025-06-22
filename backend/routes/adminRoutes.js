@@ -10,8 +10,9 @@ import {
   getAdminById,
   deleteAdmin
 } from '../controllers/adminController.js';
-import { protect } from '../middleware/authMiddleware.js';
-import { optionalImageUpload } from '../middleware/photoUpload.js';
+import verifyToken from '../middleware/verifyToken.js';
+import authorizeRole from '../middleware/authorizeRole.js';
+import imageUpload from '../middleware/imageUpload.js';
 
 const router = express.Router();
 
@@ -63,17 +64,17 @@ const validatePasswordChange = [
 ];
 
 // Public routes
-router.post('/register', optionalImageUpload, validateRegistration, registerAdmin);
+router.post('/register', imageUpload.single('photo'), validateRegistration, registerAdmin);
 router.post('/login', validateLogin, loginAdmin);
 
 // Protected routes (require authentication)
-router.get('/profile', protect, getAdminProfile);
-router.put('/profile', protect, optionalImageUpload, validateProfileUpdate, updateAdminProfile);
-router.put('/change-password', protect, validatePasswordChange, changePassword);
+router.get('/profile', verifyToken, getAdminProfile);
+router.put('/profile', verifyToken, imageUpload.single('photo'), validateProfileUpdate, updateAdminProfile);
+router.put('/change-password', verifyToken, validatePasswordChange, changePassword);
 
 // Admin management routes (for super admin)
-router.get('/', protect, getAllAdmins);
-router.get('/:id', protect, getAdminById);
-router.delete('/:id', protect, deleteAdmin);
+router.get('/', verifyToken, authorizeRole('admin'), getAllAdmins);
+router.get('/:id', verifyToken, authorizeRole('admin'), getAdminById);
+router.delete('/:id', verifyToken, authorizeRole('admin'), deleteAdmin);
 
 export default router;

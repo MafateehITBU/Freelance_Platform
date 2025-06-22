@@ -11,6 +11,10 @@ import connectDB from './config/database.js';
 import config from './config/config.js';
 
 // Import routes
+import userRoutes from './routes/userRoutes.js';
+import freelancerRoutes from './routes/freelancerRoutes.js';
+
+// Import routes
 import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();
@@ -26,6 +30,8 @@ app.use(express.urlencoded({ extended: true }));
 connectDB();
 
 // Routes
+app.use('/api/user', userRoutes);
+app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check route

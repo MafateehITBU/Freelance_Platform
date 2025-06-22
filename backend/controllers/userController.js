@@ -1,7 +1,15 @@
-import User from "../models/User";
+import User from "../models/User.js";
 import fs from "fs";
-import { uploadToCloudinary } from "../utils/cloudinary";
-import helpers from "../utils/helpers";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
+import helpers from "../utils/helpers.js";
+import jwt from 'jsonwebtoken';
+import bcrypt from "bcryptjs";
+import {
+    generateOTP,
+    getOTPExpiry,
+    sendOTPEmail,
+    verifyOTPMatch,
+} from "../utils/otp.js";
 
 /**-----------------------------------------
  *  @desc Add a new User
@@ -32,34 +40,32 @@ export const registerUser = async (req, res) => {
         }
 
         // Check if user already exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             return res.status(409).json({ message: "User already exists." });
         }
 
         // If profile picture is provided, upload it
-        let profilePictureUrl = "";
+        let profilePictureUrl = null;
         if (req.file) {
             try {
-                const uploadResult = await uploadToCloudinary(req.file.path);
-                profilePictureUrl = uploadResult.secure_url;
-
-                // Remove the file from local storage after uploading
+                profilePictureUrl = await uploadToCloudinary(req.file.path);
+                // Delete the local file after uploading
                 fs.unlinkSync(req.file.path);
             } catch (error) {
-                console.error("Error uploading profile picture:", error);
-                return res.status(500).json({ message: "Error uploading profile picture." });
+                console.error('Error uploading profile picture:', error);
+                return res.status(500).json({ message: "Failed to upload profile picture" });
             }
         }
 
         // Create new user
         const newUser = new User({
             name,
-            email,
+            email: email.toLowerCase(),
             phone,
             dateOfBirth,
             password,
-            profilePicture: profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=128`,
+            profilePicture: profilePictureUrl,
             billingDetails: [],
         });
 
@@ -69,6 +75,45 @@ export const registerUser = async (req, res) => {
         res.status(201).json({ message: "User registered successfully.", user: newUser });
     } catch (error) {
         console.error("Error registering user:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+}
+
+/**-----------------------------------------
+ *  @desc User Login
+ * @route POST /api/user/login
+ * @access Public
+ ------------------------------------------*/
+export const loginUser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password are required." });
+        }
+        if (!helpers.validateEmail(email)) {
+            return res.status(400).json({ message: "Invalid email format." });
+        }
+
+        // Find user by email
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Check password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid password." });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+        res.status(200).json({ message: "Login successful.", token });
+    } catch (error) {
+        console.error("Error logging in user:", error);
         res.status(500).json({ message: "Internal server error." });
     }
 }
@@ -92,8 +137,6 @@ export const getAllUsers = async (req, res) => {
 /**-----------------------------------------
  *  @desc Get User Profile by ID
  * @route GET /api/user/:id
- * @access Private
- * @role User, Admin
  ------------------------------------------*/
 export const getUserById = async (req, res) => {
     try {
@@ -129,7 +172,7 @@ export const updateUserProfile = async (req, res) => {
             if (!helpers.validateEmail(email)) {
                 return res.status(400).json({ message: "Invalid email format." });
             }
-            updateData.email = email;
+            updateData.email = email.toLowerCase();
         }
         if (phone) {
             if (!helpers.validatePhone(phone)) {
@@ -144,17 +187,15 @@ export const updateUserProfile = async (req, res) => {
             updateData.dateOfBirth = dateOfBirth;
         }
         // If profile picture is provided, upload it
-        let profilePictureUrl = "";
+        let profilePictureUrl = null;
         if (req.file) {
             try {
-                const uploadResult = await uploadToCloudinary(req.file.path);
-                profilePictureUrl = uploadResult.secure_url;
-
-                // Remove the file from local storage after uploading
+                profilePictureUrl = await uploadToCloudinary(req.file.path);
+                // Delete the local file after uploading
                 fs.unlinkSync(req.file.path);
             } catch (error) {
-                console.error("Error uploading profile picture:", error);
-                return res.status(500).json({ message: "Error uploading profile picture." });
+                console.error('Error uploading profile picture:', error);
+                return res.status(500).json({ message: "Failed to upload profile picture" });
             }
         }
 
@@ -175,45 +216,103 @@ export const updateUserProfile = async (req, res) => {
 }
 
 /**-----------------------------------------
- *  @desc Update User Password
- * @route PUT /api/user/:id
- * @access Private
- * @role User
+ * @desc Send OTP for resetting Password
+ * @route POST /api/user/send-otp
  ------------------------------------------*/
-export const updateUserPassword = async (req, res) => {
+export const sendOTP = async (req, res) => {
     try {
-        const userId = req.params.id;
-        const { currentPassword, newPassword } = req.body;
+        const { email } = req.body;
+        const lowercaseEmail = email.toLowerCase();
+        const user = await User.findOne({ email: lowercaseEmail });
 
-        // Validate new password
-        if (!helpers.validatePassword(newPassword)) {
-            return res.status(400).json({
-                message: "New password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character.",
-            });
-        }
-
-        // Find user
-        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: "User not found." });
+            return res.status(404).json({ error: "User not found" });
         }
 
-        // Check current password
-        const isMatch = await user.comparePassword(currentPassword);
-        if (!isMatch) {
-            return res.status(401).json({ message: "Current password is incorrect." });
-        }
-
-        // Update password
-        user.password = newPassword;
+        const otp = generateOTP();
+        user.otp = otp;
+        user.otpExpiresAt = getOTPExpiry();
         await user.save();
 
-        res.status(200).json({ message: "Password updated successfully." });
+        await sendOTPEmail({
+            to: lowercaseEmail,
+            otp,
+            emailUser: process.env.EMAIL_USER, // or use process.env.EMAIL_USER explicitly
+        });
+
+        res.status(200).json({ message: "OTP sent successfully" });
     } catch (error) {
-        console.error("Error updating user password:", error);
-        res.status(500).json({ message: "Internal server error." });
+        console.error("Error sending OTP email:", error);
+        res.status(500).json({ error: "Failed to send OTP. Please try again." });
     }
-}
+};
+
+/**-----------------------------------------
+ * @desc Verify OTP
+ * @route POST /api/user/verify-otp
+ ------------------------------------------*/
+export const verifyOTP = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const lowercaseEmail = email.toLowerCase();
+        const user = await User.findOne({ email: lowercaseEmail });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        if (!verifyOTPMatch(user, otp)) {
+            return res.status(401).json({ error: "Invalid OTP" });
+        }
+
+        res.status(200).json({ message: "OTP correct!" });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+/**-----------------------------------------
+ * @desc Update User Password
+ * @route PUT /api/user/update-password
+ ------------------------------------------*/
+export const updateUserPassword = async (req, res) => {
+    const { email, newPassword, confirmPassword } = req.body;
+
+    // Check if both fields are provided
+    if (!newPassword || !confirmPassword) {
+        return res.status(400).json({ message: "Please provide both new password and confirm password" });
+    }
+
+    // Check if passwords match
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    // Validate password strength
+    if (!helpers.validatePassword(newPassword)) {
+        return res.status(400).json({
+            message: "Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character"
+        });
+    }
+
+    try {
+        const lowercaseEmail = email.toLowerCase();
+        const user = await User.findOne({ email: lowercaseEmail });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        user.password = newPassword; // hashing will happen automatically in pre-save
+
+        await user.save();
+
+        return res.status(200).json({ message: "Password updated successfully" });
+    } catch (error) {
+        console.error('Password update error:', error);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
 
 /**-----------------------------------------
  *  @desc Delete User Profile
@@ -234,6 +333,55 @@ export const deleteUserProfile = async (req, res) => {
         res.status(200).json({ message: "User profile deleted successfully." });
     } catch (error) {
         console.error("Error deleting user profile:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+}
+
+/**-----------------------------------------
+ *  @desc Add Billing Details to User
+ * @route POST /api/user/billing
+ * @access Private
+ * @role User
+ ------------------------------------------*/
+export const addBillingDetails = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { cardNumber, expiryDate, cvv, cardHolderName } = req.body;
+
+        // Validate input
+        if (!cardNumber || !expiryDate || !cvv || !cardHolderName) {
+            return res.status(400).json({ message: "All billing details are required." });
+        }
+        if (!helpers.validateCardNumber(cardNumber)) {
+            return res.status(400).json({ message: "Invalid card number format." });
+        }
+        if (!helpers.validateCVV(cvv)) {
+            return res.status(400).json({ message: "Invalid CVV format." });
+        }
+        if (!helpers.validateExpiryDate(expiryDate)) {
+            return res.status(400).json({ message: "Invalid expiry date format." });
+        }
+
+        // Find user by ID
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        // Create billing details object
+        const billingDetails = {
+            cardNumber,
+            expiryDate,
+            cvv,
+            cardHolderName,
+        };
+
+        // Add billing details to user's billingDetails array
+        user.billingDetails.push(billingDetails);
+        // Save user with updated billing details
+        await user.save();
+        res.status(201).json({ message: "Billing details added successfully.", billingDetails });
+    } catch (error) {
+        console.error("Error adding billing details:", error);
         res.status(500).json({ message: "Internal server error." });
     }
 }

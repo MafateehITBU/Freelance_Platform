@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const userSchema = new mongoose.Schema({
+const freelancerSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -26,29 +26,28 @@ const userSchema = new mongoose.Schema({
     profilePicture: {
         type: String,
     },
-    billingDetails: [{
-        cardNumber: {
-            type: String,
-            required: true,
+    wallet: {
+        balance: {
+            type: Number,
+            default: 0,
         },
-        expiryDate: {
-            type: String,
-            required: true,
-        },
-        cvv: {
-            type: String,
-            required: true,
-        },
-        cardHolderName: {
-            type: String,
-            required: true,
-        },
+        transactions: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Transaction'
+        }],
+    },
+    personalIdImage: {
+        type: String,
+        required: true,
+    },
+    portfolio: [{
+        type: String,
     }],
-    servicesTaken: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Service'
-    }],
-    otp : {
+    verified: {
+        type: Boolean,
+        default: false,
+    },
+    otp: {
         type: String,
         default: null,
     },
@@ -56,19 +55,19 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
-}, {
+},{
     timestamps: true,
 });
 
 // Method to hash password before saving
-userSchema.pre('save', async function (next) {
+freelancerSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
 // Method to add a profile picture if not set
-userSchema.pre('save', function (next) {
+freelancerSchema.pre('save', function (next) {
     const encodedName = encodeURIComponent(this.name);
 
     if (!this.profilePicture) {
@@ -82,5 +81,5 @@ userSchema.pre('save', function (next) {
     next();
 });
 
-const User = mongoose.model('User', userSchema);
-export default User;
+const Freelancer = mongoose.model('Freelancer', freelancerSchema);
+export default Freelancer;

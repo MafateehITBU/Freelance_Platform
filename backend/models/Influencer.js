@@ -1,15 +1,17 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const userSchema = new mongoose.Schema({
+const influencerSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
+        trim: true,
     },
     email: {
         type: String,
         required: true,
         unique: true,
+        trim: true,
     },
     password: {
         type: String,
@@ -18,6 +20,7 @@ const userSchema = new mongoose.Schema({
     phone: {
         type: String,
         required: true,
+        trim: true,
     },
     dateOfBirth: {
         type: Date,
@@ -26,49 +29,42 @@ const userSchema = new mongoose.Schema({
     profilePicture: {
         type: String,
     },
-    billingDetails: [{
-        cardNumber: {
-            type: String,
-            required: true,
-        },
-        expiryDate: {
-            type: String,
-            required: true,
-        },
-        cvv: {
-            type: String,
-            required: true,
-        },
-        cardHolderName: {
-            type: String,
-            required: true,
-        },
-    }],
-    servicesTaken: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Service'
-    }],
-    otp : {
+    personalIdImage: {
         type: String,
-        default: null,
+        required: true,
     },
-    otpExpiresAt: {
-        type: Date,
-        default: null,
+    subscription: {
+        type: String,
+    },
+    socialMdeiaLinks: [{
+        platform: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        url: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+    }],
+    verified: {
+        type: Boolean,
+        default: false,
     },
 }, {
     timestamps: true,
 });
 
-// Method to hash password before saving
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    this.password = await bcrypt.hash(this.password, 10);
+influencerSchema.pre('save', async function (next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
     next();
 });
 
 // Method to add a profile picture if not set
-userSchema.pre('save', function (next) {
+influencerSchema.pre('save', function (next) {
     const encodedName = encodeURIComponent(this.name);
 
     if (!this.profilePicture) {
@@ -82,5 +78,5 @@ userSchema.pre('save', function (next) {
     next();
 });
 
-const User = mongoose.model('User', userSchema);
-export default User;
+const Influencer = mongoose.model("Influencer", influencerSchema);
+export default Influencer;
