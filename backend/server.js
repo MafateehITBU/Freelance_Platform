@@ -15,6 +15,8 @@ import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import freelancerRoutes from './routes/freelancerRoutes.js';
 import influencerRoutes from './routes/influencerRoutes.js';
+import postRoutes from './routes/postRoutes.js';
+import commentRoutes from './routes/commentRoutes.js';
 
 const app = express();
 
@@ -33,6 +35,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/influencer', influencerRoutes);
+app.use('/api/post', postRoutes);
+app.use('/api/comment', commentRoutes);
 
 
 // Health check route
