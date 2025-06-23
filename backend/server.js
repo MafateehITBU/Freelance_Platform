@@ -19,6 +19,8 @@ import postRoutes from './routes/postRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import subcategoryRoutes from './routes/subcategoryRoutes.js';
+import serviceRoutes from './routes/serviceRoutes.js';
+import addOnRoutes from './routes/addOnRoutes.js';
 
 const app = express();
 
@@ -41,6 +43,8 @@ app.use('/api/post', postRoutes);
 app.use('/api/comment', commentRoutes);
 app.use('/api/category', categoryRoutes);
 app.use('/api/subcategory', subcategoryRoutes);
+app.use('/api/service', serviceRoutes);
+app.use('/api/add-on', addOnRoutes);
 
 
 // Health check route
