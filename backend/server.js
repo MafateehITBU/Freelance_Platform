@@ -21,6 +21,10 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import subcategoryRoutes from './routes/subcategoryRoutes.js';
 import serviceRoutes from './routes/serviceRoutes.js';
 import addOnRoutes from './routes/addOnRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
+import transactionRoutes from './routes/transactionRoutes.js';
+import ratingRoutes from './routes/ratingRoutes.js';
 
 const app = express();
 
@@ -45,7 +49,10 @@ app.use('/api/category', categoryRoutes);
 app.use('/api/subcategory', subcategoryRoutes);
 app.use('/api/service', serviceRoutes);
 app.use('/api/add-on', addOnRoutes);
-
+app.use('/api/order', orderRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/transaction', transactionRoutes);
+app.use('/api/rating', ratingRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
