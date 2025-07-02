@@ -3,6 +3,9 @@ import Service from '../models/Service.js';
 import AddOn from '../models/AddOn.js';
 import Cart from '../models/Cart.js';
 import User from '../models/User.js';
+import Freelancer from '../models/Freelancer.js';
+import Wallet from '../models/Wallet.js';
+import Transaction from '../models/Transaction.js';
 
 /**-------------------------------------
  * @desc   Add a new order
@@ -74,11 +77,14 @@ export const addOrder = async (req, res) => {
         }
 
         // Create new order
+        const totalOrderPrice = service.price + addOnsTotalPrice;
+
         const order = new Order({
             userId,
             serviceId,
             selectedAddOn: parsedAddOns,
             freelancerId,
+            orderPrice: totalOrderPrice
         });
 
         const createdOrder = await order.save();
@@ -220,6 +226,7 @@ export const updateOrder = async (req, res) => {
 
         // Update order
         order.selectedAddOn = parsedAddOns;
+        order.orderPrice = order.serviceId.price + newAddOnsTotal;
         await order.save();
 
         res.status(200).json({ message: "Order updated", order });
@@ -227,6 +234,129 @@ export const updateOrder = async (req, res) => {
         console.error("Error updating order:", error);
         res.status(500).json({
             message: "Failed to update order",
+            error: error.message,
+        });
+    }
+};
+
+/**-------------------------------------
+ * @desc   Update an Order status (start working on the order)
+ * @route  PUT /api/order/start/:orderId
+ * @access Private
+ * @role   Freelancer
+ *---------------------------------------*/
+export const startOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const freelancerId = req.user.id;
+
+        const order = await Order.findById(orderId)
+            .populate('serviceId')
+            .populate('selectedAddOn');
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        const freelancer = await Freelancer.findById(freelancerId);
+        if (!freelancer) {
+            return res.status(404).json({ message: "Freelancer not found" });
+        }
+
+        // Get the freelancer's wallet
+        const wallet = await Wallet.findOne({ owner: freelancerId, ownerModel: 'Freelancer' });
+        if (!wallet) {
+            return res.status(404).json({ message: "Freelancer wallet not found" });
+        }
+
+        // Increase wallet balance by order price
+        wallet.balance += order.orderPrice;
+        await wallet.save();
+
+        // Update order status
+        order.status = "In Progress";
+        await order.save();
+
+        res.status(200).json({ message: "Order started successfully", order });
+    } catch (error) {
+        console.error("Error starting order:", error);
+        res.status(500).json({
+            message: "Failed to start order",
+            error: error.message,
+        });
+    }
+};
+
+/**-------------------------------------
+ * @desc   Update an Order status (end working on the order)
+ * @route  PUT /api/order/end/:orderId
+ * @access Private
+ * @role   Freelancer
+ *---------------------------------------*/
+export const endOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const freelancerId = req.user.id;
+
+        const order = await Order.findById(orderId)
+            .populate('serviceId')
+            .populate('selectedAddOn');
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        const freelancer = await Freelancer.findById(freelancerId);
+        if (!freelancer) {
+            return res.status(404).json({ message: "Freelancer not found" });
+        }
+
+        const totalPrice = order.orderPrice;
+
+        // Get wallets
+        const freelancerWallet = await Wallet.findOne({ owner: freelancerId, ownerModel: 'Freelancer' });
+        const adminWallet = await Wallet.findOne({ ownerModel: 'Admin' });
+
+        if (!freelancerWallet || !adminWallet) {
+            return res.status(404).json({ message: "One or both wallets not found" });
+        }
+
+        // Create transaction from Admin to Freelancer
+        const transaction = new Transaction({
+            from: adminWallet.owner,
+            fromModel: 'Admin',
+            to: freelancerId,
+            toModel: 'Freelancer',
+            type: 'Freelance Payment',
+            amount: totalPrice,
+            paymentMethod: 'visa',
+            status: 'success',
+        });
+
+        await transaction.save();
+
+        // Decrement platform (admin) balance
+        adminWallet.balance -= totalPrice;
+        await adminWallet.save();
+
+        // Decrement freelancer balance
+        freelancerWallet.balance -= totalPrice;
+        await freelancerWallet.save();
+
+        // Update order status
+        order.status = "Completed";
+        await order.save();
+
+        res.status(200).json({
+            message: "Order completed and payment processed successfully",
+            order,
+            transaction
+        });
+
+    } catch (error) {
+        console.error("Error completing order:", error);
+        res.status(500).json({
+            message: "Failed to complete order",
             error: error.message,
         });
     }

@@ -3,6 +3,7 @@ import Order from '../models/Order.js';
 import Cart from '../models/Cart.js';
 import Service from '../models/Service.js';
 import AddOn from '../models/AddOn.js';
+import Wallet from '../models/Wallet.js';
 
 /**-------------------------------------
  * @desc   Checkout Cart
@@ -13,7 +14,11 @@ import AddOn from '../models/AddOn.js';
 export const checkoutCart = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { paymentMethod, status } = req.body;
+        const { fromModel, paymentMethod, status } = req.body;
+
+        if (!fromModel || !paymentMethod || !status) {
+            return res.status(400).json({ message: "Please fill all required fields" });
+        }
 
         if (!['card', 'paypal', 'visa'].includes(paymentMethod)) {
             return res.status(400).json({ message: "Invalid payment method" });
@@ -28,27 +33,39 @@ export const checkoutCart = async (req, res) => {
             return res.status(400).json({ message: "Your cart is empty" });
         }
 
+        // Fetch the platform wallet (only one admin wallet assumed)
+        const platformWallet = await Wallet.findOne({ ownerModel: 'Admin' });
+        if (!platformWallet) {
+            return res.status(404).json({ message: "Platform wallet not found" });
+        }
+
         const purchasedOrders = [];
         let totalPaid = 0;
 
         for (const order of cart.orders) {
             const service = await Service.findById(order.serviceId);
+            console.log(service);
             const addOns = await AddOn.find({ _id: { $in: order.selectedAddOn } });
 
             const addOnTotal = addOns.reduce((sum, a) => sum + a.price, 0);
             const amount = service.price + addOnTotal;
 
-            // Create transaction
+            // Create transaction for each order
             const transaction = new Transaction({
-                user: userId,
+                from: userId,
+                fromModel: fromModel,
+                to: platformWallet.owner,
+                toModel: 'Admin',
+                type: 'User Payment',
                 amount,
                 paymentMethod,
                 status,
             });
             const savedTransaction = await transaction.save();
 
-            // Link transaction to order
+            // Link transaction to order and save orderPrice
             order.transactionId = savedTransaction._id;
+            order.orderPrice = amount;
             await order.save();
 
             purchasedOrders.push(order._id);
@@ -63,7 +80,17 @@ export const checkoutCart = async (req, res) => {
             });
         }
 
-        // If payment was successful or pending, record in history & clear cart
+        // If payment was successful, increase platform wallet balance
+        if (status === 'success') {
+            const totalToAdd = totalPaid + (cart.platformFee || 0);
+
+            platformWallet.balance += totalToAdd;
+            await platformWallet.save();
+
+            console.log(`[WALLET] Platform wallet updated. Added: ${totalToAdd}, New Balance: ${platformWallet.balance}`);
+        }
+
+        // Save order history and clear cart
         cart.history.push({
             orders: purchasedOrders,
             total: totalPaid + cart.platformFee,
@@ -121,11 +148,7 @@ export const retryFailedCheckout = async (req, res) => {
         const newTransactionIds = [];
 
         for (const order of retryOrders) {
-            const service = await Service.findById(order.serviceId);
-            const addOns = await AddOn.find({ _id: { $in: order.selectedAddOn } });
-
-            const addOnTotal = addOns.reduce((sum, a) => sum + a.price, 0);
-            const amount = service.price + addOnTotal;
+            const amount = order.orderPrice;
 
             // Create new transaction with status = success
             const transaction = new Transaction({

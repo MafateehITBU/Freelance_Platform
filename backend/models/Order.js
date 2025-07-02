@@ -32,6 +32,10 @@ const orderSchema = new mongoose.Schema({
     transactionId: {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Transaction'  
+    },
+    orderPrice: {
+        type: Number,
+        default: 0,
     }
 }, {
     timestamps: true,

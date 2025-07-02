@@ -1,4 +1,3 @@
-import Freelancer from '../models/Freelancer.js';
 import Rating from '../models/Rating.js';
 import User from '../models/User.js';
 import Order from '../models/Order.js';

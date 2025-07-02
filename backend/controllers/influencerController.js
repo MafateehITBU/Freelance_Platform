@@ -1,4 +1,6 @@
 import Influencer from "../models/Influencer.js";
+import SubscriptionPlan from "../models/SubscriptionPlan.js";
+import Transaction from "../models/Transaction.js";
 import fs from "fs";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import helpers from "../utils/helpers.js";
@@ -235,6 +237,88 @@ export const updateInfluencer = async (req, res) => {
     } catch (error) {
         console.error("Error updating Influencer:", error);
         res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+/**-----------------------------------------
+ *  @desc   Subscribe influencer to a plan
+ *  @route  PUT /api/influencer/subscribe/:subscriptionPlanId
+ *  @access Private
+ *  @role   Influencer
+ ------------------------------------------*/
+export const subscribeToPlan = async (req, res) => {
+    try {
+        const influencerId = req.user.id;
+        const { subscriptionPlanId } = req.params;
+        const { paymentMethod, status } = req.body;
+
+        if (!paymentMethod || !status) {
+            return res.status(400).json({ message: "Please fill all required fields" });
+        }
+
+        if (!['card', 'paypal', 'visa'].includes(paymentMethod)) {
+            return res.status(400).json({ message: "Invalid payment method" });
+        }
+
+        if (!['success', 'failed', 'pending'].includes(status)) {
+            return res.status(400).json({ message: "Invalid payment status" });
+        }
+
+        // Check if influencer exists
+        const influencer = await Influencer.findById(influencerId);
+        if (!influencer) {
+            return res.status(404).json({ message: "Influencer not found" });
+        }
+
+        // Check if plan exists
+        const plan = await SubscriptionPlan.findById(subscriptionPlanId);
+        if (!plan) {
+            return res.status(404).json({ message: "Subscription plan not found" });
+        }
+
+        // Create transaction
+        const transaction = new Transaction({
+            userPaidModel: "Influencer",
+            user: influencerId,
+            amount: plan.price,
+            paymentMethod,
+            status,
+        });
+
+        await transaction.save();
+
+        let now = null;
+        let oneMonthLater = null;
+
+        if (status !== 'failed') {
+            now = new Date();
+            oneMonthLater = new Date(now);
+            oneMonthLater.setMonth(now.getMonth() + 1);
+
+            // Update subscription details
+            influencer.subscriptionActive = true;
+            influencer.subscriptionPlan = plan._id;
+            influencer.subscriptionStartDate = now;
+            influencer.subscriptionEndDate = oneMonthLater;
+
+            await influencer.save();
+        }
+
+        res.status(200).json({
+            message: `Subscription process complete. Status: ${status}`,
+            subscription: {
+                plan: plan.name,
+                startDate: now,
+                endDate: oneMonthLater,
+            },
+        });
+
+    } catch (error) {
+        console.error("Error subscribing influencer:", error);
+        res.status(500).json({
+            message: "Failed to subscribe influencer",
+            error: error.message,
+        });
     }
 };
 

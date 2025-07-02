@@ -1,5 +1,7 @@
 import Freelancer from "../models/Freelancer.js";
-import fs from "fs";
+import Wallet from "../models/Wallet.js";
+import Service from "../models/Service.js";
+import AddOn from "../models/AddOn.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import helpers from "../utils/helpers.js";
 import jwt from 'jsonwebtoken';
@@ -21,7 +23,7 @@ export const addFreelancer = async (req, res) => {
     try {
         const { name, email, password, phone, dateOfBirth } = req.body;
 
-        // validate required fields
+        // Validate required fields
         if (!name || !email || !password || !phone || !dateOfBirth) {
             return res.status(400).json({ message: "All fields are required" });
         }
@@ -32,24 +34,21 @@ export const addFreelancer = async (req, res) => {
             return res.status(400).json({ message: "Freelancer already exists" });
         }
 
-        // validate email format
+        // Validate inputs
         if (!helpers.validateEmail(email)) {
             return res.status(400).json({ message: "Invalid email format" });
         }
-        // validate phone number format
         if (!helpers.validatePhone(phone)) {
             return res.status(400).json({ message: "Invalid phone number format" });
         }
-        // validate date of birth format
         if (!helpers.validateDOB(dateOfBirth)) {
             return res.status(400).json({ message: "Invalid date of birth format" });
         }
 
-        // check if pdf and profilePicture and personalIdImage are provided
+        // Upload files
         let profilePictureUrl = null;
         let personalIdImageUrl = null;
         let portfolioUrls = [];
-
         const files = req.files;
 
         if (files?.profilePicture?.[0]) {
@@ -85,15 +84,25 @@ export const addFreelancer = async (req, res) => {
 
         await newFreelancer.save();
 
+        // Create wallet for the freelancer
+        const wallet = new Wallet({
+            owner: newFreelancer._id,
+            ownerModel: "Freelancer",
+            balance: 0
+        });
+        await wallet.save();
+
         res.status(201).json({
             message: "Freelancer registered successfully.",
-            freelancer: newFreelancer
+            freelancer: newFreelancer,
+            wallet
         });
     } catch (error) {
         console.error("Error adding freelancer:", error);
         res.status(500).json({ message: "Internal server error" });
     }
-}
+};
+
 
 /**-----------------------------------------
  *  @desc Freelancer Login
@@ -399,12 +408,34 @@ export const deleteFreelancer = async (req, res) => {
             return res.status(404).json({ message: "Freelancer not found" });
         }
 
-        // Delete freelancer
+        // Find all services that belong to this freelancer
+        const services = await Service.find({ freelancer: id });
+
+        // Loop through services and delete associated add-ons
+        for (const service of services) {
+            if (service.addOn?.length > 0) {
+                await AddOn.deleteMany({ _id: { $in: service.addOn } });
+            }
+        }
+
+        // Delete the services
+        await Service.deleteMany({ freelancer: id });
+
+        // Delete the freelancer's wallet
+        const wallet = await Wallet.findOne({ owner: id, ownerModel: 'Freelancer' });
+        if (wallet) {
+            await Wallet.findByIdAndDelete(wallet._id);
+        }
+
+        // Delete the freelancer
         await Freelancer.findByIdAndDelete(id);
 
-        res.status(200).json({ message: "Freelancer deleted successfully" });
+        res.status(200).json({
+            message: "Freelancer, their services, add-ons, and wallet deleted successfully"
+        });
+
     } catch (error) {
         console.error("Error deleting freelancer:", error);
         res.status(500).json({ message: "Internal server error" });
     }
-}
+};

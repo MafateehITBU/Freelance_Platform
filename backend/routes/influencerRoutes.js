@@ -5,6 +5,7 @@ import {
     getAllInfluencer,
     getInfluencerById,
     updateInfluencer,
+    subscribeToPlan,
     sendOTP,
     verifyOTP,
     updateInfluencerPassword,
@@ -35,6 +36,7 @@ router.get(
 router.post('/send-otp', sendOTP);
 router.post('/verify-otp', verifyOTP);
 router.put('/update-password', updateInfluencerPassword);
+router.put('/subscribe/:subscriptionPlanId',verifyToken, authorizeRole('influencer'), subscribeToPlan);
 router.get(
     '/:id',
     verifyToken,

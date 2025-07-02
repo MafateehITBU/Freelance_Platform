@@ -33,10 +33,6 @@ const influencerSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    subscription: {
-        type: Boolean,
-        default: false,
-    },
     socialMediaLinks: [{
         platform: {
             type: String,
@@ -60,6 +56,22 @@ const influencerSchema = new mongoose.Schema({
     otpExpiresAt: {
         type: Date,
         default: null,
+    },
+    subscriptionPlan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubscriptionPlan',
+    },
+    subscriptionActive: {
+        type: Boolean,
+        default: false,
+    },
+    subscriptionStartDate: {
+        type: Date,
+        required: true,
+    },
+    subscriptionEndDate: {
+        type: Date,
+        required: true,
     },
 }, {
     timestamps: true,

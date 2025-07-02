@@ -26,16 +26,6 @@ const freelancerSchema = new mongoose.Schema({
     profilePicture: {
         type: String,
     },
-    wallet: {
-        balance: {
-            type: Number,
-            default: 0,
-        },
-        transactions: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Transaction'
-        }],
-    },
     personalIdImage: {
         type: String,
         required: true,

@@ -5,6 +5,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import http from 'http';
+import { Server } from 'socket.io';
+import { chatSocket } from './utils/socketChat.js';
 
 // Import config and database connection
 import connectDB from './config/database.js';
@@ -25,8 +28,20 @@ import orderRoutes from './routes/orderRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import ratingRoutes from './routes/ratingRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
+import subscriptionPlanRoutes from './routes/subscriptionPlanRoutes.js';
+import walletRoutes from './routes/walletRoutes.js';
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  }
+});
+chatSocket(io);
 
 // Middleware
 app.use(helmet());
@@ -53,6 +68,9 @@ app.use('/api/order', orderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/transaction', transactionRoutes);
 app.use('/api/rating', ratingRoutes);
+app.use('/api/chat', messageRoutes);
+app.use('/api/subscription-plan', subscriptionPlanRoutes);4
+app.use('/api/wallet', walletRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -67,7 +85,7 @@ app.use('*', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  
+
   // Handle multer errors
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -81,16 +99,16 @@ app.use((err, req, res, next) => {
     }
     return res.status(400).json({ message: 'File upload error: ' + err.message });
   }
-  
+
   // Handle validation errors
   if (err.message && err.message.includes('Only image files are allowed')) {
     return res.status(400).json({ message: err.message });
   }
-  
+
   // Handle other errors
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-app.listen(config.port, () => {
+server.listen(config.port, () => {
   console.log(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
-}); 
+});
