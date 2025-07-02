@@ -13,6 +13,9 @@ import { chatSocket } from './utils/socketChat.js';
 import connectDB from './config/database.js';
 import config from './config/config.js';
 
+// Import daily cron job
+import './utils/subscriptionCheck.js';
+
 // Import routes
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';

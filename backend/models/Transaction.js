@@ -7,7 +7,7 @@ const transactionSchema = new mongoose.Schema({
   },
   fromModel: {
     type: String,
-    enum: ['Admin', 'Freelancer', 'User'],
+    enum: ['Admin', 'Freelancer','Influencer', 'User'],
   },
   to: {
     type: mongoose.Schema.Types.ObjectId,
@@ -19,7 +19,7 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['Freelance Payment','User Payment'],
+    enum: ['Freelance Payment','User Payment', 'Retry User Payment','Subscription'],
   },
   amount: { type: Number, default: 0 },
   paymentMethod: { type: String, enum: ['card', 'paypal', 'visa'] },

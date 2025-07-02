@@ -144,6 +144,11 @@ export const retryFailedCheckout = async (req, res) => {
             return res.status(400).json({ message: "No failed transactions to retry" });
         }
 
+        const platformWallet = await Wallet.findOne({ ownerModel: 'Admin' });
+        if (!platformWallet) {
+            return res.status(404).json({ message: "Platform wallet not found" });
+        }
+
         let totalPaid = 0;
         const newTransactionIds = [];
 
@@ -152,10 +157,14 @@ export const retryFailedCheckout = async (req, res) => {
 
             // Create new transaction with status = success
             const transaction = new Transaction({
-                user: userId,
+                from: userId,
+                fromModel: 'User',
+                to: platformWallet.owner,
+                toModel: 'Admin',
+                type: 'Retry User Payment',
                 amount,
                 paymentMethod,
-                status: 'success', // Or 'pending' if you're awaiting confirmation
+                status: 'success',
             });
 
             const savedTransaction = await transaction.save();

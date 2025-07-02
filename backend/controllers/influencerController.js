@@ -1,7 +1,7 @@
 import Influencer from "../models/Influencer.js";
 import SubscriptionPlan from "../models/SubscriptionPlan.js";
 import Transaction from "../models/Transaction.js";
-import fs from "fs";
+import Wallet from "../models/Wallet.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import helpers from "../utils/helpers.js";
 import jwt from 'jsonwebtoken';
@@ -276,10 +276,19 @@ export const subscribeToPlan = async (req, res) => {
             return res.status(404).json({ message: "Subscription plan not found" });
         }
 
+        // Get Platform Wallet
+        const adminWallet = await Wallet.findOne({ ownerModel: 'Admin' });
+        if (!adminWallet) {
+            return res.status(404).json({ message: "Platform wallet not found" });
+        }
+
         // Create transaction
         const transaction = new Transaction({
-            userPaidModel: "Influencer",
-            user: influencerId,
+            from: influencerId,
+            fromModel: "Influencer",
+            to: adminWallet.owner,
+            toModel: 'Admin',
+            type: 'Subscription',
             amount: plan.price,
             paymentMethod,
             status,
@@ -302,6 +311,9 @@ export const subscribeToPlan = async (req, res) => {
             influencer.subscriptionEndDate = oneMonthLater;
 
             await influencer.save();
+
+            adminWallet.balance += plan.price;
+            adminWallet.save();
         }
 
         res.status(200).json({
