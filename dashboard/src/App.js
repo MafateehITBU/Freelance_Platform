@@ -6,6 +6,8 @@ import FreelancersPage from "./pages/FreelancersPage";
 import InfluencersPage from "./pages/InfluencersPage";
 import UsersPage from "./pages/UsersPage";
 import CategoriesPage from "./pages/CategoriesPage";
+import ServicesPage from "./pages/ServicesPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
         <Route path="/influencers" element={<InfluencersPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
+        {/* <Route path="/services" element={<ServicesPage />} /> */}
+        <Route path="/subscription-plans" element={<SubscriptionPage />} />
 
         
         {/* Catch all route - redirect to signin if not authenticated */}

@@ -14,6 +14,10 @@ const subscriptionPlanSchema = new mongoose.Schema({
     description: {
         type: String,
     },
+    features: {
+        type: [String],
+        default: []
+    },
 }, { timestamps: true });
 
 const SubscriptionPlan = mongoose.model("SubscriptionPlan", subscriptionPlanSchema);

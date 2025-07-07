@@ -1,6 +1,7 @@
 import express from 'express';
 import {
     addService,
+    getAllServices,
     getAllFreelancerServices,
     getServicesByCategory,
     getServicesBySubCategory,
@@ -22,7 +23,8 @@ router.post(
     imageUpload.fields([{ name: 'images', maxCount: 5 }]),
     addService
 );
-
+// Get all services
+router.get('/all', getAllServices);
 // Get all freelancer services
 router.get('/', getAllFreelancerServices);
 

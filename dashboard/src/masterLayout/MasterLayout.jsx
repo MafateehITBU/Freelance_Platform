@@ -248,7 +248,7 @@ const MasterLayout = ({ children }) => {
                 <li>
                   <NavLink
                     to='/users'
-                    className={(navData) => (navData.isActive ? "active-page" : "")}  
+                    className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
                       icon='line-md:account'
@@ -256,7 +256,7 @@ const MasterLayout = ({ children }) => {
                     />
                     <span>Users</span>
                   </NavLink>
-                </li> 
+                </li>
 
                 {/* Categories */}
                 <li>
@@ -265,10 +265,38 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:account'
+                      icon='line-md:text-box'
                       className='menu-icon'
                     />
                     <span>Categories</span>
+                  </NavLink>
+                </li>
+
+                {/* Services */}
+                <li>
+                  <NavLink
+                    to='/services'
+                    className={(navData) => (navData.isActive ? "active-page" : "")}
+                  >
+                    <Icon
+                      icon='line-md:text-box'
+                      className='menu-icon'
+                    />
+                    <span>Services</span>
+                  </NavLink>
+                </li>
+
+                {/* Subscription Plans */}
+                <li>
+                  <NavLink
+                    to='/subscription-plans'
+                    className={(navData) => (navData.isActive ? "active-page" : "")}
+                  >
+                    <Icon
+                      icon='line-md:text-box'
+                      className='menu-icon'
+                    />
+                    <span>Subscription Plans</span>
                   </NavLink>
                 </li>
 

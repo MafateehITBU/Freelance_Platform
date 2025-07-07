@@ -104,6 +104,28 @@ export const addService = async (req, res) => {
 }
 
 /**-------------------------------------
+ * @desc Get all services
+ * @route GET /api/service/all
+ * @access Public
+ *---------------------------------------*/
+export const getAllServices = async (req, res) => {
+    try {
+        const services = await Service.find()
+            .populate('category', 'name')
+            .populate('subCategory', 'name')
+            .populate('freelancer', 'name profilePicture')
+            .populate('addOn');
+        res.status(200).json(services);
+    } catch (error) {
+        console.error("Error fetching services:", error);
+        res.status(500).json({
+            message: "Failed to fetch services",
+            error: error.message
+        });
+    }
+}
+
+/**-------------------------------------
  * @desc Get all services for a freelancer
  * @route GET /api/service
  * @access Public
