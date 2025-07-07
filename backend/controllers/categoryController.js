@@ -3,14 +3,14 @@ import Subcategory from '../models/Subcategory.js';
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 
 /**-----------------------------------------
- *  @desc  Add a new Category
+ *  @desc  Add a new Category (and optional subcategories)
  *  @route POST /api/category
  * @access Private
  * @role   Admin
  * ------------------------------------------*/
 export const addCategory = async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, subcategories } = req.body;
 
         // Validate input
         if (!name || !description) {
@@ -33,12 +33,45 @@ export const addCategory = async (req, res) => {
         });
 
         await newCategory.save();
-        res.status(201).json({ message: 'Category added successfully', category: newCategory });
+
+        const createdSubcategories = [];
+
+        let parsedSubcategories = [];
+        if (subcategories) {
+            if (typeof subcategories === 'string') {
+                try {
+                    parsedSubcategories = JSON.parse(subcategories);
+                } catch (err) {
+                    console.error('Failed to parse subcategories JSON:', err);
+                }
+            } else if (Array.isArray(subcategories)) {
+                parsedSubcategories = subcategories;
+            }
+        }
+
+        if (parsedSubcategories.length > 0) {
+            for (const subName of parsedSubcategories) {
+                if (typeof subName === 'string' && subName.trim() !== '') {
+                    const subcategory = new Subcategory({
+                        name: subName.trim(),
+                        category: newCategory._id
+                    });
+                    await subcategory.save();
+                    createdSubcategories.push(subcategory);
+                }
+            }
+        }
+
+        res.status(201).json({
+            message: 'Category added successfully',
+            category: newCategory,
+            subcategories: createdSubcategories
+        });
     } catch (error) {
         console.error('Error adding category:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
-}
+};
 
 /**-----------------------------------------
  *  @desc  Get all Categories
@@ -54,6 +87,43 @@ export const getAllCategories = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
+
+/**-----------------------------------------
+ *  @desc  Get all Categories with their subcategories
+ *  @route GET /api/category/subcategories
+ * @access Public
+ * ------------------------------------------*/
+export const getCategoriesWithSubcategories = async (req, res) => {
+    try {
+        const categories = await Category.aggregate([
+            {
+                $lookup: {
+                    from: 'subcategories',      // collection name in MongoDB (lowercase & plural by default)
+                    localField: '_id',
+                    foreignField: 'category',
+                    as: 'subcategories'
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    description: 1,
+                    image: 1,
+                    subcategories: {
+                        _id: 1,
+                        name: 1,
+                        category: 1
+                    }
+                }
+            }
+        ]);
+
+        res.status(200).json(categories);
+    } catch (error) {
+        console.error('Error fetching categories with subcategories:', error);
+        res.status(500).json({ message: 'Server error fetching categories' });
+    }
+};
 
 /**-----------------------------------------
  *  @desc  Get Category by ID
@@ -136,9 +206,9 @@ export const deleteCategory = async (req, res) => {
         }
 
         // check if the category has subcategories and delete them
-        const subcategories = await Subcategory.find({ categoryId });
+        const subcategories = await Subcategory.find({ category: categoryId });
         if (subcategories.length > 0) {
-            await Subcategory.deleteMany({ categoryId });
+            await Subcategory.deleteMany({ category: categoryId });
             console.log(`Deleted ${subcategories.length} subcategories associated with category ID: ${categoryId}`);
         }
 

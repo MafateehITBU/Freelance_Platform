@@ -243,7 +243,7 @@ const MasterLayout = ({ children }) => {
                     <span>Influencers</span>
                   </NavLink>
                 </li>
-                
+
                 {/* Users */}
                 <li>
                   <NavLink
@@ -257,6 +257,20 @@ const MasterLayout = ({ children }) => {
                     <span>Users</span>
                   </NavLink>
                 </li> 
+
+                {/* Categories */}
+                <li>
+                  <NavLink
+                    to='/categories'
+                    className={(navData) => (navData.isActive ? "active-page" : "")}
+                  >
+                    <Icon
+                      icon='line-md:account'
+                      className='menu-icon'
+                    />
+                    <span>Categories</span>
+                  </NavLink>
+                </li>
 
               </>
             )}
