@@ -67,11 +67,9 @@ const influencerSchema = new mongoose.Schema({
     },
     subscriptionStartDate: {
         type: Date,
-        required: true,
     },
     subscriptionEndDate: {
         type: Date,
-        required: true,
     },
 }, {
     timestamps: true,
