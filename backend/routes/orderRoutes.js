@@ -1,6 +1,7 @@
 import express from "express";
 import {
     addOrder,
+    getAllOrders,
     getAllUserOrders,
     getOrderById,
     updateOrder,
@@ -14,6 +15,7 @@ import authorizeRole from "../middleware/authorizeRole.js";
 const router = express.Router();
 
 router.post('/', verifyToken, authorizeRole('user'), addOrder); // Create a new order
+router.get('/all', verifyToken, authorizeRole('admin'), getAllOrders); // Get All Orders for Admin
 router.get('/user', verifyToken, authorizeRole('user'), getAllUserOrders); // Get All Orders
 router.get('/:orderId', verifyToken, authorizeRole('user','admin'), getOrderById); // Get an Order by ID
 router.put('/:orderId', verifyToken, authorizeRole('user'), updateOrder); // Update an Order by ID

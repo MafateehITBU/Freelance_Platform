@@ -1,46 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { useTable, useGlobalFilter, useSortBy, usePagination } from 'react-table';
-import { Icon } from '@iconify/react';
-import axiosInstance from "../axiosConfig.js";
-import { ToastContainer, toast } from 'react-toastify';
+import axiosInstance from "../axiosConfig";
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaSortUp, FaSortDown, FaSort } from 'react-icons/fa';
-import DeleteModal from './modals/DeleteModal.jsx';
 
 const GlobalFilter = ({ globalFilter, setGlobalFilter }) => (
     <input
         className="form-control w-100"
         value={globalFilter || ''}
         onChange={e => setGlobalFilter(e.target.value)}
-        placeholder="Search Users..."
+        placeholder="Search Orders..."
     />
 );
 
-const UsersLayer = () => {
-    const [Users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
+const OrdersLayer = () => {
+    const [orders, setOrders] = useState([]);
 
     useEffect(() => {
-        fetchUsers();
+        fetchData();
     }, []);
 
-    const fetchUsers = async () => {
+    const fetchData = async () => {
         try {
-            const res = await axiosInstance.get('/user');
-            setUsers(res.data);
-            setLoading(false);
+            const response = await axiosInstance.get('/order/all');
+            setOrders(response.data);
         } catch (error) {
             console.error('Error fetching data:', error);
-            toast.error('Failed to fetch data');
-            setLoading(false);
         }
-    };
-
-    const handleDeleteUser = (User) => {
-        setSelectedUser(User);
-        setShowDeleteModal(true);
     };
 
     const columns = React.useMemo(() => [
@@ -49,74 +36,77 @@ const UsersLayer = () => {
             accessor: (_row, i) => i + 1,
         },
         {
-            Header: 'Photo',
-            accessor: 'profilePicture',
-            Cell: ({ value }) => (
-                <img
-                    src={value}
-                    alt="Profile"
-                    style={{ width: '40px', height: '40px', borderRadius: '50%' }}
-                />
-            ),
-        },
-        { Header: 'Name', accessor: 'name' },
-        { Header: 'Email', accessor: 'email' },
-        { Header: 'Phone', accessor: 'phone' },
-        {
-            Header: 'Date of Birth',
-            accessor: 'dateOfBirth',
-            Cell: ({ value }) => new Date(value).toLocaleDateString(),
+            Header: 'User Name',
+            accessor: row => row.userId?.name || '-',
         },
         {
-            Header: 'Actions',
-            Cell: ({ row }) => (
-                <div className="d-flex gap-2">
-                    <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDeleteUser(row.original)}
-                    >
-                        <Icon icon="mdi:delete" />
-                    </button>
-                </div>
-            ),
+            Header: 'Service',
+            accessor: row => row.serviceId?.title || '-',
         },
+        {
+            Header: 'Add Ons',
+            accessor: row => row.selectedAddOn?.length
+                ? row.selectedAddOn.map(addOn => addOn.title).join(', ')
+                : '-',
+        },
+        {
+            Header: 'Freelancer',
+            accessor: row => row.freelancerId?.name || '-',
+        },
+        {
+            Header: 'Price',
+            accessor: row => row.orderPrice + ' JD' || '-',
+        },
+        {
+            Header: 'Status',
+            accessor: row => {
+                if (row.status === 'Pending') return <span className="badge bg-warning">Pending</span>;
+                if (row.status === 'In Progress') return <span className="badge bg-info">In Progress</span>;
+                if (row.status === 'Completed') return <span className="badge bg-success">Completed</span>;
+                return '-';
+            }
+        }
     ], []);
 
     const {
         getTableProps,
         getTableBodyProps,
         headerGroups,
-        prepareRow,
         page,
-        canPreviousPage,
-        canNextPage,
+        prepareRow,
+        setGlobalFilter,
+        state,
         pageOptions,
+        gotoPage,
         nextPage,
         previousPage,
-        gotoPage,
-        state: { pageIndex, globalFilter },
-        setGlobalFilter,
+        canNextPage,
+        canPreviousPage,
     } = useTable(
-        { columns, data: Users, initialState: { pageSize: 10 } },
+        { columns, data: orders, initialState: { pageIndex: 0, pageSize: 10 } },
         useGlobalFilter,
         useSortBy,
         usePagination
     );
 
+    const { pageIndex, globalFilter } = state;
+
     return (
         <div className="card basic-data-table" style={{ minHeight: '65vh' }}>
             <ToastContainer />
             <div className="card-header d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-                <h5 className='card-title mb-0 flex-shrink-0 w-35 w-md-100 w-sm-100'>Users</h5>
+                <h5 className='card-title mb-0 flex-shrink-0 w-35 w-md-100 w-sm-100'>Orders</h5>
                 <div className="w-35 w-md-100 w-sm-100">
-                    <GlobalFilter globalFilter={globalFilter} setGlobalFilter={setGlobalFilter} className="form-control" />
+                    <GlobalFilter
+                        globalFilter={globalFilter}
+                        setGlobalFilter={setGlobalFilter}
+                        className="form-control"
+                    />
                 </div>
             </div>
-            <div className="card-body p-0 d-flex flex-column">
-                {loading ? (
-                    <div className="text-center p-4">Loading...</div>
-                ) : Users.length === 0 ? (
-                    <div className="text-center p-4">No Users found</div>
+            <div className="card-body d-flex flex-column p-0">
+                {orders.length === 0 ? (
+                    <div className="text-center p-4">No orders found</div>
                 ) : (
                     <>
                         <div className="table-responsive">
@@ -126,7 +116,8 @@ const UsersLayer = () => {
                                         <tr {...headerGroup.getHeaderGroupProps()}>
                                             {headerGroup.headers.map(column => (
                                                 <th {...column.getHeaderProps(column.getSortByToggleProps())} style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                    {column.render('Header')}{' '}
+                                                    {column.render('Header')}
+                                                    {' '}
                                                     {column.isSorted ? (
                                                         column.isSortedDesc ? <FaSortDown /> : <FaSortUp />
                                                     ) : (
@@ -156,6 +147,8 @@ const UsersLayer = () => {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination */}
                         <div className="d-flex justify-content-end mt-auto px-3 pb-4">
                             <ul className="pagination mb-0">
                                 <li className={`page-item ${!canPreviousPage ? 'disabled' : ''}`}>
@@ -174,16 +167,8 @@ const UsersLayer = () => {
                     </>
                 )}
             </div>
-
-            <DeleteModal
-                show={showDeleteModal}
-                handleClose={() => setShowDeleteModal(false)}
-                item={selectedUser}
-                itemType="user"
-                fetchData={fetchUsers}
-            />
         </div>
     );
 };
 
-export default UsersLayer;
+export default OrdersLayer;

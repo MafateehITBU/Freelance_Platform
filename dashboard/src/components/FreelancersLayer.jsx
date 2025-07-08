@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useTable, useGlobalFilter, useSortBy } from 'react-table';
+import { useTable, useGlobalFilter, useSortBy, usePagination } from 'react-table';
 import { Icon } from '@iconify/react';
 import axiosInstance from "../axiosConfig.js";
 import { ToastContainer, toast } from 'react-toastify';
@@ -32,7 +32,6 @@ const FreelancersLayer = () => {
 
     const fetchFreelancers = async () => {
         try {
-            // Fetch all freelancers
             const res = await axiosInstance.get('/freelancer');
             setFreelancers(res.data);
             setLoading(false);
@@ -43,10 +42,7 @@ const FreelancersLayer = () => {
         }
     };
 
-    const handleAddFreelancer = () => {
-        setShowAddModal(true);
-    };
-
+    const handleAddFreelancer = () => setShowAddModal(true);
     const handleUpdateFreelancer = (Freelancer) => {
         setSelectedFreelancer(Freelancer);
         setShowUpdateModal(true);
@@ -76,25 +72,12 @@ const FreelancersLayer = () => {
             Header: 'Photo',
             accessor: 'profilePicture',
             Cell: ({ value }) => (
-                <img
-                    src={value}
-                    alt="Profile"
-                    style={{ width: '40px', height: '40px', borderRadius: '50%' }}
-                />
+                <img src={value} alt="Profile" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
             ),
         },
-        {
-            Header: 'Name',
-            accessor: 'name',
-        },
-        {
-            Header: 'Email',
-            accessor: 'email',
-        },
-        {
-            Header: 'Phone',
-            accessor: 'phone',
-        },
+        { Header: 'Name', accessor: 'name' },
+        { Header: 'Email', accessor: 'email' },
+        { Header: 'Phone', accessor: 'phone' },
         {
             Header: 'Date of Birth',
             accessor: 'dateOfBirth',
@@ -105,46 +88,17 @@ const FreelancersLayer = () => {
             accessor: 'verified',
             Cell: ({ row, value }) => {
                 const freelancerId = row.original._id;
-
-                const badgeColor = value === true ? 'success'
-                    : value === false ? 'danger'
-                        : 'secondary';
-
-                const badgeText = value === true ? 'Verified'
-                    : value === false ? 'Rejected'
-                        : 'Take Action';
+                const badgeColor = value === true ? 'success' : value === false ? 'danger' : 'secondary';
+                const badgeText = value === true ? 'Verified' : value === false ? 'Rejected' : 'Take Action';
 
                 return (
                     <div className="dropdown">
-                        <span
-                            className={`badge bg-${badgeColor} dropdown-toggle`}
-                            data-bs-toggle="dropdown"
-                            role="button"
-                            style={{ cursor: 'pointer' }}
-                        >
+                        <span className={`badge bg-${badgeColor} dropdown-toggle`} data-bs-toggle="dropdown" role="button" style={{ cursor: 'pointer' }}>
                             {badgeText}
                         </span>
                         <ul className="dropdown-menu">
-                            {value !== true && (
-                                <li>
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={() => handleApprove(freelancerId)}
-                                    >
-                                        Approve
-                                    </button>
-                                </li>
-                            )}
-                            {value !== false && (
-                                <li>
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={() => handleApprove(freelancerId)}
-                                    >
-                                        Reject
-                                    </button>
-                                </li>
-                            )}
+                            {value !== true && <li><button className="dropdown-item" onClick={() => handleApprove(freelancerId)}>Approve</button></li>}
+                            {value !== false && <li><button className="dropdown-item" onClick={() => handleApprove(freelancerId)}>Reject</button></li>}
                         </ul>
                     </div>
                 );
@@ -154,16 +108,10 @@ const FreelancersLayer = () => {
             Header: 'Actions',
             Cell: ({ row }) => (
                 <div className="d-flex gap-2">
-                    <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => handleUpdateFreelancer(row.original)}
-                    >
+                    <button className="btn btn-sm btn-primary" onClick={() => handleUpdateFreelancer(row.original)}>
                         <Icon icon="mdi:pencil" />
                     </button>
-                    <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDeleteFreelancer(row.original)}
-                    >
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDeleteFreelancer(row.original)}>
                         <Icon icon="mdi:delete" />
                     </button>
                 </div>
@@ -175,78 +123,96 @@ const FreelancersLayer = () => {
         getTableProps,
         getTableBodyProps,
         headerGroups,
-        rows,
         prepareRow,
+        page,
+        canPreviousPage,
+        canNextPage,
+        gotoPage,
+        pageOptions,
+        nextPage,
+        previousPage,
+        state: { pageIndex, globalFilter },
         setGlobalFilter,
-        state,
-    } = useTable({ columns, data: Freelancers }, useGlobalFilter, useSortBy);
+    } = useTable(
+        { columns, data: Freelancers, initialState: { pageSize: 10 } },
+        useGlobalFilter,
+        useSortBy,
+        usePagination
+    );
 
     return (
-        <div className="card basic-data-table">
+        <div className="card basic-data-table" style={{ minHeight: '65vh' }}>
             <ToastContainer />
             <div className="card-header d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                 <h5 className='card-title mb-0 flex-shrink-0 w-35 w-md-100 w-sm-100'>Freelancers</h5>
                 <div className="w-35 w-md-100 w-sm-100">
-                    <GlobalFilter
-                        globalFilter={state.globalFilter}
-                        setGlobalFilter={setGlobalFilter}
-                        className="form-control"
-                    />
+                    <GlobalFilter globalFilter={globalFilter} setGlobalFilter={setGlobalFilter} className="form-control" />
                 </div>
                 <div className="w-35 w-md-100 w-sm-100">
-                    <button
-                        className="btn btn-success w-100 w-md-auto"
-                        onClick={handleAddFreelancer}
-                    >
-
+                    <button className="btn btn-success w-100 w-md-auto" onClick={handleAddFreelancer}>
                         <span className="ms-1">Add New Freelancer</span>
                     </button>
                 </div>
             </div>
-            <div className="card-body p-0">
+            <div className="card-body p-0 d-flex flex-column">
                 {loading ? (
                     <div className="text-center p-4">Loading...</div>
                 ) : Freelancers.length === 0 ? (
                     <div className="text-center p-4">No Freelancers found</div>
                 ) : (
-                    <div className="table-responsive">
-                        <table className="table bordered-table mb-0" {...getTableProps()}>
-                            <thead>
-                                {headerGroups.map(headerGroup => (
-                                    <tr {...headerGroup.getHeaderGroupProps()}>
-                                        {headerGroup.headers.map(column => (
-                                            <th {...column.getHeaderProps(column.getSortByToggleProps())} style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                {column.render('Header')}
-                                                {' '}
-                                                {column.isSorted ? (
-                                                    column.isSortedDesc ? <FaSortDown /> : <FaSortUp />
-                                                ) : (
-                                                    <FaSort style={{ opacity: 0.3 }} />
-                                                )}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </thead>
-                            <tbody {...getTableBodyProps()}>
-                                {rows.map(row => {
-                                    prepareRow(row);
-                                    return (
-                                        <tr {...row.getRowProps()}>
-                                            {row.cells.map(cell => {
-                                                const { key, ...cellProps } = cell.getCellProps();
-                                                return (
-                                                    <td key={key} {...cellProps} style={{ textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                                                        {cell.render('Cell')}
-                                                    </td>
-                                                );
-                                            })}
+                    <>
+                        <div className="table-responsive">
+                            <table className="table bordered-table mb-0" {...getTableProps()}>
+                                <thead>
+                                    {headerGroups.map(headerGroup => (
+                                        <tr {...headerGroup.getHeaderGroupProps()}>
+                                            {headerGroup.headers.map(column => (
+                                                <th {...column.getHeaderProps(column.getSortByToggleProps())} style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                                    {column.render('Header')}
+                                                    {' '}
+                                                    {column.isSorted ? (column.isSortedDesc ? <FaSortDown /> : <FaSortUp />) : (<FaSort style={{ opacity: 0.3 }} />)}
+                                                </th>
+                                            ))}
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                    ))}
+                                </thead>
+                                <tbody {...getTableBodyProps()}>
+                                    {page.map(row => {
+                                        prepareRow(row);
+                                        return (
+                                            <tr {...row.getRowProps()}>
+                                                {row.cells.map(cell => {
+                                                    const { key, ...cellProps } = cell.getCellProps();
+                                                    return (
+                                                        <td key={key} {...cellProps} style={{ textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                                            {cell.render('Cell')}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="d-flex justify-content-end mt-auto px-3 pb-4">
+                            <ul className="pagination mb-0">
+                                <li className={`page-item ${!canPreviousPage ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => previousPage()}>Prev</button>
+                                </li>
+                                {pageOptions.map(p => (
+                                    <li key={p} className={`page-item ${p === pageIndex ? 'active' : ''}`}>
+                                        <button className="page-link" onClick={() => gotoPage(p)}>{p + 1}</button>
+                                    </li>
+                                ))}
+                                <li className={`page-item ${!canNextPage ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => nextPage()}>Next</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -274,4 +240,4 @@ const FreelancersLayer = () => {
     );
 };
 
-export default FreelancersLayer; 
+export default FreelancersLayer;

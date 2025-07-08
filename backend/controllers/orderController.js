@@ -123,6 +123,29 @@ export const addOrder = async (req, res) => {
 };
 
 /**-------------------------------------
+ * @desc   Get All Orders
+ * @route  GET /api/order/all
+ * @access Private
+ * @role   Admin
+ *---------------------------------------*/
+export const getAllOrders = async (req, res) => {
+    try {
+        const orders = await Order.find({})
+            .populate('userId', 'name')
+            .populate('serviceId', 'title description price')
+            .populate('selectedAddOn')
+            .populate('freelancerId', 'name');
+        res.status(200).json( orders );
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        res.status(500).json({
+            message: "Failed to fetch orders",
+            error: error.message,
+        });
+    }
+};
+
+/**-------------------------------------
  * @desc   Get All Orders for a user
  * @route  GET /api/order
  * @access Private
@@ -174,7 +197,6 @@ export const getOrderById = async (req, res) => {
         });
     }
 };
-
 
 /**-------------------------------------
  * @desc   Update an Order
