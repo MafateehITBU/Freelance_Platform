@@ -30,7 +30,7 @@ const DeleteModal = ({
             </Modal.Header>
             <Modal.Body>
                 <p className="text-center">
-                    Are you sure you want to delete <strong>{item?.name || item?.title || 'this item'}</strong>?
+                    Are you sure you want to delete <strong>{item?.name || item?.title || item?.userId?.name ||'this item'}</strong>?
                     <br />
                     This action cannot be undone.
                 </p>

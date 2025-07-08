@@ -10,6 +10,7 @@ import ServicesPage from "./pages/ServicesPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import OrdersPage from "./pages/OrdersPage";
 import RatingsPage from "./pages/RatingsPage";
+import PostsPage from "./pages/PostsPage";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/subscription-plans" element={<SubscriptionPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/ratings" element={<RatingsPage />} />
+        <Route path="/posts" element={<PostsPage />} />
 
         
         {/* Catch all route - redirect to signin if not authenticated */}

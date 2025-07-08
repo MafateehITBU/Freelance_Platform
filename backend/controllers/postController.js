@@ -1,4 +1,5 @@
 import Post from '../models/Post.js';
+import Comment from '../models/Comment.js';
 
 /**-----------------------------------------
  *  @desc  Add a new Post
@@ -37,7 +38,7 @@ export const addPost = async (req, res) => {
  ------------------------------------------*/
 export const getAllPosts = async (req, res) => {
     try {
-        const posts = await Post.find().populate('userId', 'name email').sort({ createdAt: -1 });
+        const posts = await Post.find().populate('userId', 'name email profilePicture').sort({ createdAt: -1 });
         res.status(200).json(posts);
     } catch (error) {
         console.error('Error fetching posts:', error);
@@ -114,6 +115,9 @@ export const deletePost = async (req, res) => {
             return res.status(403).json({ message: 'You are not authorized to delete this post' });
         }
 
+        // Delete the comments associated with the post
+        await Comment.deleteMany({ postId: req.params.id });
+        
         await Post.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: 'Post deleted successfully' });
     } catch (error) {
