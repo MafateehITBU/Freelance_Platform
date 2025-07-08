@@ -23,7 +23,7 @@ function App() {
         <Route path="/influencers" element={<InfluencersPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
-        {/* <Route path="/services" element={<ServicesPage />} /> */}
+        <Route path="/services" element={<ServicesPage />} />
         <Route path="/subscription-plans" element={<SubscriptionPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/ratings" element={<RatingsPage />} />
