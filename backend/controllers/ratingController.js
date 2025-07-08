@@ -73,6 +73,27 @@ export const addRating = async (req, res) => {
 };
 
 /**-------------------------------------
+ * @desc   Get all ratings
+ * @route  GET /api/rating
+ * @access Public
+ *---------------------------------------*/
+export const getAllRatings = async (req, res) => {
+    try {
+        const ratings = await Rating.find({})
+            .populate('userId', 'name email') // show user info
+            .populate('freelancerId', 'name') // show freelancer info
+            .sort({ createdAt: -1 });
+        res.status(200).json( ratings );
+    } catch (error) {
+        console.error("Error fetching ratings:", error);
+        res.status(500).json({
+            message: "Failed to get ratings", error: error
+                .message
+        });
+    }
+};
+
+/**-------------------------------------
  * @desc   Get all ratings for a freelancer
  * @route  GET /api/rating/freelancer/:freelancerId
  * @access Public
