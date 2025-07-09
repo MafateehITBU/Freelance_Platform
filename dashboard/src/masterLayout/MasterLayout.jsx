@@ -444,7 +444,7 @@ const MasterLayout = ({ children }) => {
                       <div className="w-40-px h-40-px rounded-circle bg-neutral-200 animate-pulse" />
                     ) : (
                       <img
-                        src={user?.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=128`}
+                        src={user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&size=128`}
                         alt='user'
                         className='w-40-px h-40-px object-fit-cover rounded-circle'
                         onError={(e) => {

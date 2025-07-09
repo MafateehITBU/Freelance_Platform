@@ -64,12 +64,12 @@ const validatePasswordChange = [
 ];
 
 // Public routes
-router.post('/register', imageUpload.single('photo'), validateRegistration, registerAdmin);
+router.post('/register', imageUpload.single('image'), validateRegistration, registerAdmin);
 router.post('/login', validateLogin, loginAdmin);
 
 // Protected routes (require authentication)
 router.get('/profile', verifyToken, getAdminProfile);
-router.put('/profile', verifyToken, imageUpload.single('photo'), validateProfileUpdate, updateAdminProfile);
+router.put('/profile', verifyToken, imageUpload.single('image'), validateProfileUpdate, updateAdminProfile);
 router.put('/change-password', verifyToken, validatePasswordChange, changePassword);
 
 // Admin management routes (for super admin)

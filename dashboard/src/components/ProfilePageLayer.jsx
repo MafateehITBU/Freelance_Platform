@@ -9,29 +9,23 @@ import { useNavigate } from 'react-router-dom';
 
 const ProfilePageLayer = () => {
     const { user, loading, updateUser, setUser } = useAuth();
-    const [imagePreview, setImagePreview] = useState(user?.photo || 'assets/images/user-grid/user-grid-img13.png');
+    const [imagePreview, setImagePreview] = useState(user?.image || 'assets/images/user-grid/user-grid-img13.png');
     const [passwordVisible, setPasswordVisible] = useState(false);
-    const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+    const [newPasswordVisible, setNewPasswordVisible] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [formData, setFormData] = useState({
         name: user?.name || '',
         email: user?.email || '',
-        phone: user?.phone || '',
-        photo: user?.photo || ''
+        image: user?.image || ''
     });
     const [errors, setErrors] = useState({
         name: '',
         email: '',
-        phone: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [passwordData, setPasswordData] = useState({
-        newPassword: '',
-        confirmPassword: ''
-    });
-    const [passwordErrors, setPasswordErrors] = useState({
-        newPassword: '',
-        confirmPassword: ''
+        currentPassword: '',
+        newPassword: ''
     });
     const navigate = useNavigate();
 
@@ -42,13 +36,7 @@ const ProfilePageLayer = () => {
 
     // Toggle function for confirm password field
     const toggleConfirmPasswordVisibility = () => {
-        setConfirmPasswordVisible(!confirmPasswordVisible);
-    };
-
-    // Validation functions
-    const validatePhone = (phone) => {
-        const phoneRegex = /^07[7-9]\d{7}$/;
-        return phoneRegex.test(phone);
+        setNewPasswordVisible(!newPasswordVisible);
     };
 
     const validateEmail = (email) => {
@@ -60,7 +48,6 @@ const ProfilePageLayer = () => {
         const newErrors = {
             name: '',
             email: '',
-            phone: ''
         };
 
         // Name validation
@@ -73,11 +60,6 @@ const ProfilePageLayer = () => {
             newErrors.email = 'Email is required';
         } else if (!validateEmail(formData.email)) {
             newErrors.email = 'Please enter a valid email address';
-        }
-
-        // Phone validation
-        if (formData.phone && !validatePhone(formData.phone)) {
-            newErrors.phone = 'Phone number must start with 07 followed by 7 or 8 or 9 and 7 digits';
         }
 
         setErrors(newErrors);
@@ -133,19 +115,16 @@ const ProfilePageLayer = () => {
 
         try {
             // Determine the endpoint based on user position
-            const endpoint = user?.position === 'admin' || user?.position === 'superadmin'
-                ? `/admin/${user?.id}`
-                : `/tech/${user?.id}`;
+            const endpoint = '/admin/profile';
 
             // Create FormData object
             const formDataToSend = new FormData();
             formDataToSend.append('name', formData.name);
             formDataToSend.append('email', formData.email);
-            formDataToSend.append('phone', formData.phone);
             
             // Add the file if it exists
             if (selectedFile) {
-                formDataToSend.append('profilePic', selectedFile);
+                formDataToSend.append('image', selectedFile);
             }
 
             const response = await axiosInstance.put(endpoint, formDataToSend);
@@ -154,8 +133,7 @@ const ProfilePageLayer = () => {
                 updateUser({
                     name: formData.name,
                     email: formData.email,
-                    phone: formData.phone,
-                    photo: response.data.admin?.photo || response.data.tech?.photo || formData.photo
+                    image: response.data.admin?.image || response.data.tech?.image || formData.image
                 });
 
                 await Swal.fire({
@@ -187,46 +165,13 @@ const ProfilePageLayer = () => {
         return passwordRegex.test(password);
     };
 
-    const validatePasswordForm = () => {
-        const newErrors = {
-            newPassword: '',
-            confirmPassword: ''
-        };
-
-        // New password validation
-        if (!passwordData.newPassword.trim()) {
-            newErrors.newPassword = 'New password is required';
-        } else if (!validatePassword(passwordData.newPassword)) {
-            newErrors.newPassword = 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character';
-        }
-
-        // Confirm password validation
-        if (!passwordData.confirmPassword.trim()) {
-            newErrors.confirmPassword = 'Please confirm your password';
-        } else if (passwordData.newPassword !== passwordData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
-        }
-
-        setPasswordErrors(newErrors);
-        return !Object.values(newErrors).some(error => error !== '');
-    };
-
     const handlePasswordChange = (e) => {
         const { name, value } = e.target;
         setPasswordData(prev => ({ ...prev, [name]: value }));
-        
-        // Clear error when user starts typing
-        if (passwordErrors[name]) {
-            setPasswordErrors(prev => ({ ...prev, [name]: '' }));
-        }
     };
 
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
-        
-        if (!validatePasswordForm()) {
-            return;
-        }
 
         const result = await Swal.fire({
             title: 'Change Password',
@@ -247,13 +192,11 @@ const ProfilePageLayer = () => {
 
         try {
             // Determine the endpoint based on user position
-            const endpoint = user?.position === 'admin' || user?.position === 'superadmin'
-                ? `/admin/update-password/${user?.id}`
-                : `/tech/update-password/${user?.id}`;
+            const endpoint ='/admin/change-password';
 
             const response = await axiosInstance.put(endpoint, {
-                newPassword: passwordData.newPassword,
-                confirmPassword: passwordData.confirmPassword
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
             });
             
             if (response.data) {
@@ -270,15 +213,12 @@ const ProfilePageLayer = () => {
                 // Reset user state
                 updateUser({
                     id: null,
-                    position: null,
                     name: null,
                     email: null,
-                    photo: null,
-                    phone: null,
-                    bio: null
+                    image: null,
                 });
                 // Navigate to sign in page
-                navigate('/signin');
+                navigate('/sign-in');
             }
         } catch (error) {
             console.error('Error changing password:', error);
@@ -330,7 +270,7 @@ const ProfilePageLayer = () => {
                                 {loading ? (
                                     <div className="h-4 w-24 bg-neutral-200 rounded animate-pulse" />
                                 ) : (
-                                    user?.position || 'User'
+                                    user?.position || 'Admin'
                                 )}
                             </span>
                         </div>
@@ -358,30 +298,6 @@ const ProfilePageLayer = () => {
                                             <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse" />
                                         ) : (
                                             user?.email || 'Not set'
-                                        )}
-                                    </span>
-                                </li>
-                                <li className="d-flex align-items-center gap-1 mb-12">
-                                    <span className="w-30 text-md fw-semibold text-primary-light">
-                                        Phone
-                                    </span>
-                                    <span className="w-70 text-secondary-light fw-medium">
-                                        : {loading ? (
-                                            <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse" />
-                                        ) : (
-                                            user?.phone || 'Not set'
-                                        )}
-                                    </span>
-                                </li>
-                                <li className="d-flex align-items-center gap-1 mb-12">
-                                    <span className="w-30 text-md fw-semibold text-primary-light">
-                                        Position
-                                    </span>
-                                    <span className="w-70 text-secondary-light fw-medium">
-                                        : {loading ? (
-                                            <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse" />
-                                        ) : (
-                                            user?.position || 'Not set'
                                         )}
                                     </span>
                                 </li>
@@ -521,30 +437,6 @@ const ProfilePageLayer = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="col-sm-6">
-                                            <div className="mb-20">
-                                                <label
-                                                    htmlFor="phone"
-                                                    className="form-label fw-semibold text-primary-light text-sm mb-8"
-                                                >
-                                                    Phone
-                                                </label>
-                                                <input
-                                                    type="tel"
-                                                    className={`form-control radius-8 ${errors.phone ? 'is-invalid' : ''}`}
-                                                    id="phone"
-                                                    name="phone"
-                                                    value={formData.phone}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter phone number (e.g., 0771234567)"
-                                                />
-                                                {errors.phone && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.phone}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
                                     </div>
                                     <div className="d-flex align-items-center justify-content-center gap-3">
                                         <button
@@ -566,18 +458,18 @@ const ProfilePageLayer = () => {
                             <div className="tab-pane fade" id="pills-change-passwork" role="tabpanel" aria-labelledby="pills-change-passwork-tab" tabIndex="0">
                                 <form onSubmit={handlePasswordSubmit}>
                                     <div className="mb-20">
-                                        <label htmlFor="newPassword" className="form-label fw-semibold text-primary-light text-sm mb-8">
-                                            New Password <span className="text-danger-600">*</span>
+                                        <label htmlFor="currentPassword" className="form-label fw-semibold text-primary-light text-sm mb-8">
+                                            Current Password <span className="text-danger-600">*</span>
                                         </label>
                                         <div className="position-relative">
                                             <input
                                                 type={passwordVisible ? "text" : "password"}
-                                                className={`form-control radius-8 ${passwordErrors.newPassword ? 'is-invalid' : ''}`}
-                                                id="newPassword"
-                                                name="newPassword"
-                                                value={passwordData.newPassword}
+                                                className={`form-control radius-8`}
+                                                id="currentPassword"
+                                                name="currentPassword"
+                                                value={passwordData.currentPassword}
                                                 onChange={handlePasswordChange}
-                                                placeholder="Enter New Password*"
+                                                placeholder="Enter Current Password*"
                                             />
                                             <span
                                                 className="toggle-password cursor-pointer position-absolute end-0 top-50 translate-middle-y me-16 text-secondary-light"
@@ -585,25 +477,20 @@ const ProfilePageLayer = () => {
                                             >
                                                 <Icon icon={passwordVisible ? 'mdi:eye-off' : 'mdi:eye'} />
                                             </span>
-                                            {passwordErrors.newPassword && (
-                                                <div className="invalid-feedback">
-                                                    {passwordErrors.newPassword}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
 
                                     <div className="mb-20">
-                                        <label htmlFor="confirmPassword" className="form-label fw-semibold text-primary-light text-sm mb-8">
-                                            Confirm Password <span className="text-danger-600">*</span>
+                                        <label htmlFor="newPassword" className="form-label fw-semibold text-primary-light text-sm mb-8">
+                                            New Password <span className="text-danger-600">*</span>
                                         </label>
                                         <div className="position-relative">
                                             <input
-                                                type={confirmPasswordVisible ? "text" : "password"}
-                                                className={`form-control radius-8 ${passwordErrors.confirmPassword ? 'is-invalid' : ''}`}
-                                                id="confirmPassword"
-                                                name="confirmPassword"
-                                                value={passwordData.confirmPassword}
+                                                type={newPasswordVisible ? "text" : "password"}
+                                                className={`form-control radius-8`}
+                                                id="newPassword"
+                                                name="newPassword"
+                                                value={passwordData.newPassword}
                                                 onChange={handlePasswordChange}
                                                 placeholder="Confirm Password*"
                                             />
@@ -611,13 +498,8 @@ const ProfilePageLayer = () => {
                                                 className="toggle-password cursor-pointer position-absolute end-0 top-50 translate-middle-y me-16 text-secondary-light"
                                                 onClick={toggleConfirmPasswordVisibility}
                                             >
-                                                <Icon icon={confirmPasswordVisible ? 'mdi:eye-off' : 'mdi:eye'} />
+                                                <Icon icon={newPasswordVisible ? 'mdi:eye-off' : 'mdi:eye'} />
                                             </span>
-                                            {passwordErrors.confirmPassword && (
-                                                <div className="invalid-feedback">
-                                                    {passwordErrors.confirmPassword}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
 
@@ -627,10 +509,6 @@ const ProfilePageLayer = () => {
                                             className="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-56 py-11 radius-8"
                                             onClick={() => {
                                                 setPasswordData({
-                                                    newPassword: '',
-                                                    confirmPassword: ''
-                                                });
-                                                setPasswordErrors({
                                                     newPassword: '',
                                                     confirmPassword: ''
                                                 });

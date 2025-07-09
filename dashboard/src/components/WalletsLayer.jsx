@@ -92,7 +92,7 @@ const WalletsLayer = () => {
         const txs = transactions.filter((tx) =>
             tx.to?._id === ownerId ||
             tx.from?._id === ownerId ||
-            (isPlatform && (tx.fromModel?.toLowerCase() === 'admin' || tx.toModel?.toLowerCase() === 'admin'))
+            (isPlatform && (tx.fromModel?.toLowerCase() === 'Admin' || tx.toModel?.toLowerCase() === 'Admin'))
         );
 
         setModalTransactions(txs);
