@@ -214,7 +214,10 @@ export const getUserTransactions = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const transactions = await Transaction.find({ user: userId }).sort({ paidAt: -1 });
+        const transactions = await Transaction.find({ from: userId })
+            .populate('from', 'name email')
+            .populate('to', 'name email')
+            .sort({ paidAt: -1 });
 
         res.status(200).json({ transactions });
     } catch (error) {
@@ -240,7 +243,8 @@ export const getAllTransactions = async (req, res) => {
         if (userId) filter.user = userId;
 
         const transactions = await Transaction.find(filter)
-            .populate('user', 'name email')
+            .populate('from', 'name email')
+            .populate('to', 'name email')
             .sort({ paidAt: -1 });
 
         res.status(200).json({ transactions });
@@ -262,7 +266,10 @@ export const getTransactionById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const transaction = await Transaction.findById(id).populate('user', 'name email');
+        const transaction = await Transaction.findById(id)
+            .populate('from', 'name email')
+            .populate('to', 'name email');
+            
         if (!transaction) {
             return res.status(404).json({ message: "Transaction not found" });
         }

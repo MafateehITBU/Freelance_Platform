@@ -10,7 +10,8 @@ import Wallet from "../models/Wallet.js";
  ------------------------------------------*/
 export const getAllWallets = async (req, res) => {
     try {
-        const wallets = await Wallet.find();
+        const wallets = await Wallet.find()
+        .populate("owner", "name email");
         return res.status(200).json(wallets);
     } catch (error) {
         console.log("Error fetching wallets:", error);
@@ -46,22 +47,13 @@ export const getWalletById = async (req, res) => {
  ------------------------------------------*/
 export const getUserWallet = async (req, res) => {
     try {
-        const { userId, role } = req.user;
+        const { id, role } = req.user;
 
-        let loggedInUser = null;
-        if (role === 'admin') {
-            loggedInUser = await Admin.findById(userId);
-        } else if (role === 'freelancer') {
-            loggedInUser = await Freelancer.findById(userId);
-        } else {
+        if (role !== "admin" && role !== "freelancer") {
             return res.status(403).json({ message: "User is not authorized to have a wallet!" });
         }
 
-        if (!loggedInUser || !loggedInUser.walletId) {
-            return res.status(404).json({ message: "Wallet not found!" });
-        }
-
-        const wallet = await Wallet.findById(loggedInUser.walletId);
+        const wallet = await Wallet.findOne({ owner: id });
         if (!wallet) {
             return res.status(404).json({ message: "Wallet not found!" });
         }

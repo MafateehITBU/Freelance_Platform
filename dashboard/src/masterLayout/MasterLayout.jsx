@@ -342,6 +342,19 @@ const MasterLayout = ({ children }) => {
                   </NavLink>
                 </li>
 
+                {/* Wallets */}
+                <li>
+                  <NavLink
+                    to='/wallets'
+                    className={(navData) => (navData.isActive ? "active-page" : "")}
+                  >
+                    <Icon
+                      icon='line-md:text-box'
+                      className='menu-icon'
+                    />
+                    <span>Wallets</span>
+                  </NavLink>
+                </li>
               </>
             )}
           </ul>

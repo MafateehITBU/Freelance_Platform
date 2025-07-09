@@ -11,6 +11,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import OrdersPage from "./pages/OrdersPage";
 import RatingsPage from "./pages/RatingsPage";
 import PostsPage from "./pages/PostsPage";
+import WalletsPage from "./pages/WalletsPage";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/ratings" element={<RatingsPage />} />
         <Route path="/posts" element={<PostsPage />} />
+        <Route path="/wallets" element={<WalletsPage />} />
 
         
         {/* Catch all route - redirect to signin if not authenticated */}
