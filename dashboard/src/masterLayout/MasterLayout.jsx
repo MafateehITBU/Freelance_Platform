@@ -182,17 +182,17 @@ const MasterLayout = ({ children }) => {
         <div>
           <Link to='/' className='sidebar-logo'>
             <img
-              src='/assets/images/seagulls/MainLogo.svg'
+              src='/assets/images/freelancer/no-bg.png'
               alt='site logo'
               className='light-logo'
             />
             <img
-              src='/assets/images/seagulls/MainLogo.svg'
+              src='/assets/images/freelancer/no-bg.png'
               alt='site logo'
               className='dark-logo'
             />
             <img
-              src='/assets/images/seagulls/MainLogo.svg'
+              src='/assets/images/freelancer/no-bg.png'
               alt='site logo'
               className='logo-icon'
             />

@@ -198,6 +198,43 @@ export const getOrderById = async (req, res) => {
     }
 };
 
+
+/**-------------------------------------
+ * @desc   Get the completed orders no for all freelancers
+ * @route  GET /api/order/completed-count
+ * @access Private
+ * @role   Admin
+ *---------------------------------------*/
+export const getCompletedOrdersCount = async (req, res) => {
+    try {
+        // Count completed orders for each freelancer
+        const freelancers = await Freelancer.find({}).select('name');
+        if (!freelancers || freelancers.length === 0) {
+            return res.status(404).json({ message: "No freelancers found" });
+        }
+        const completedOrdersCount = await Promise.all(freelancers.map(async (freelancer) => {
+            const count = await Order.countDocuments({
+                freelancerId: freelancer._id,
+                status: 'Completed'
+            });
+            return {
+                freelancerId: freelancer._id,
+                name: freelancer.name,
+                completedOrdersCount: count
+            };
+        }));
+
+        // return an array of freelancer objects with their completed orders count
+        res.status(200).json(completedOrdersCount);
+    } catch (error) {
+        console.error("Error fetching completed orders count:", error);
+        res.status(500).json({
+            message: "Failed to fetch completed orders count",
+            error: error.message,
+        });
+    }
+};
+
 /**-------------------------------------
  * @desc   Update an Order
  * @route  PUT /api/order/:orderId

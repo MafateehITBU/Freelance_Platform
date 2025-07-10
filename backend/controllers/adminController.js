@@ -156,7 +156,10 @@ export const updateAdminProfile = async (req, res) => {
 
     if (!imageUrl || imageUrl === admin.image) {
       const displayName = name || admin.name;
-      imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=128`;
+      // check if the image that is saved actually includes ui-avatars
+      if (imageUrl.includes("ui-avatars")) {
+        imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=128`;
+      }
     }
 
     // Check email uniqueness if changed

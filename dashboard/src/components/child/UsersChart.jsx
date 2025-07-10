@@ -3,23 +3,23 @@ import { Link } from "react-router-dom";
 import axiosInstance from '../../axiosConfig';
 
 const UsersChart = () => {
-  const [techs, setTechs] = useState([]);
+  const [influencers, setInfluencers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const MAX_DISPLAY_TECHS = 7; // Maximum number of technicians to display
+  const MAX_DISPLAY_INFLUENCERS = 7; // Maximum number of INFLUENCERS to display
 
   useEffect(() => {
-    const fetchTechs = async () => {
+    const fetchinfluencers = async () => {
       try {
-        const response = await axiosInstance.get('/tech');
-        setTechs(response.data.techs);
+        const response = await axiosInstance.get('/INFLUENCER');
+        setInfluencers(response.data);
       } catch (error) {
-        console.error('Error fetching techs:', error);
+        console.error('Error fetching influencers:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTechs();
+    fetchinfluencers();
   }, []);
 
   return (
@@ -27,9 +27,9 @@ const UsersChart = () => {
       <div className='card h-100'>
         <div className='card-header border-bottom'>
           <div className='d-flex align-items-center flex-wrap gap-2 justify-content-between'>
-            <h6 className='mb-2 fw-bold text-lg mb-0'>Technicians</h6>
+            <h6 className='mb-2 fw-bold text-lg mb-0'>Influencers</h6>
             <Link
-              to='/technicians'
+              to='/influencers'
               className='text-primary-600 hover-text-primary d-flex align-items-center gap-1'
             >
               View All
@@ -44,7 +44,7 @@ const UsersChart = () => {
           <div className='d-flex flex-column gap-24'>
             {loading ? (
               // Loading skeleton - shows exactly 6 items
-              Array(MAX_DISPLAY_TECHS).fill(0).map((_, index) => (
+              Array(MAX_DISPLAY_INFLUENCERS).fill(0).map((_, index) => (
                 <div key={index} className='d-flex align-items-center justify-content-between gap-3'>
                   <div className='d-flex align-items-center'>
                     <div className='w-40-px h-40-px rounded-circle bg-neutral-200 animate-pulse' />
@@ -58,11 +58,11 @@ const UsersChart = () => {
               ))
             ) : (
               // Display only first 6 technicians
-              techs.slice(0, MAX_DISPLAY_TECHS).map((tech, index) => (
+              influencers.slice(0, MAX_DISPLAY_INFLUENCERS).map((tech, index) => (
                 <div key={index} className='d-flex align-items-center justify-content-between gap-3'>
                   <div className='d-flex align-items-center'>
                     <img
-                      src={tech.photo || 'assets/images/default-avatar.png'}
+                      src={tech.profilePicture || 'assets/images/default-avatar.png'}
                       alt={tech.name}
                       className='w-40-px h-40-px rounded-circle flex-shrink-0 me-12 overflow-hidden'
                       onError={(e) => {
@@ -72,7 +72,7 @@ const UsersChart = () => {
                     <div className='flex-grow-1'>
                       <h6 className='text-md mb-0'>{tech.name}</h6>
                       <span className='text-sm text-secondary-light fw-normal'>
-                        {tech.position || 'Technician'}
+                         Influencer
                       </span>
                     </div>
                   </div>
