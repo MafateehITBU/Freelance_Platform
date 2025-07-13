@@ -5,10 +5,11 @@ import {
     getAllUserOrders,
     getOrderById,
     getCompletedOrdersCount,
+    getOrdersCountByCategory,
     updateOrder,
     startOrder,
     endOrder,
-    deleteOrder
+    deleteOrder,
 } from '../controllers/orderController.js';
 import verifyToken from "../middleware/verifyToken.js";
 import authorizeRole from "../middleware/authorizeRole.js";
@@ -19,6 +20,7 @@ router.post('/', verifyToken, authorizeRole('user'), addOrder); // Create a new 
 router.get('/all', verifyToken, authorizeRole('admin'), getAllOrders); // Get All Orders for Admin
 router.get('/user', verifyToken, authorizeRole('user'), getAllUserOrders); // Get All Orders
 router.get('/completed-count', verifyToken, authorizeRole('admin'), getCompletedOrdersCount); // Get Count of Completed Orders for Admin
+router.get('/category-count', verifyToken, authorizeRole('admin'), getOrdersCountByCategory); // Get Count of Orders by Category
 router.get('/:orderId', verifyToken, authorizeRole('user','admin'), getOrderById); // Get an Order by ID
 router.put('/:orderId', verifyToken, authorizeRole('user'), updateOrder); // Update an Order by ID
 router.put('/start/:orderId', verifyToken, authorizeRole('freelancer'), startOrder); // Start Order by ID

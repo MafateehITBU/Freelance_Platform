@@ -6,6 +6,7 @@ import User from '../models/User.js';
 import Freelancer from '../models/Freelancer.js';
 import Wallet from '../models/Wallet.js';
 import Transaction from '../models/Transaction.js';
+import Category from '../models/Category.js';
 
 /**-------------------------------------
  * @desc   Add a new order
@@ -135,7 +136,7 @@ export const getAllOrders = async (req, res) => {
             .populate('serviceId', 'title description price')
             .populate('selectedAddOn')
             .populate('freelancerId', 'name');
-        res.status(200).json( orders );
+        res.status(200).json(orders);
     } catch (error) {
         console.error("Error fetching orders:", error);
         res.status(500).json({
@@ -230,6 +231,64 @@ export const getCompletedOrdersCount = async (req, res) => {
         console.error("Error fetching completed orders count:", error);
         res.status(500).json({
             message: "Failed to fetch completed orders count",
+            error: error.message,
+        });
+    }
+};
+
+/**-------------------------------------
+ * @desc   Get the orders count for each category
+ * @route  GET /api/order/category-count
+ * @access Private
+ * @role   Admin
+ *---------------------------------------*/
+export const getOrdersCountByCategory = async (req, res) => {
+    try {
+        const result = await Category.aggregate([
+            {
+                $lookup: {
+                    from: 'services',
+                    localField: '_id',
+                    foreignField: 'category',
+                    as: 'services'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$services',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'orders',
+                    localField: 'services._id',
+                    foreignField: 'serviceId',
+                    as: 'orders'
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    name: { $first: '$name' },
+                    ordersCount: { $sum: { $size: '$orders' } }
+                }
+            },
+            {
+                $project: {
+                    categoryId: '$_id',
+                    name: 1,
+                    ordersCount: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Error fetching orders count by category:", error);
+        res.status(500).json({
+            message: "Failed to fetch orders count by category",
             error: error.message,
         });
     }
