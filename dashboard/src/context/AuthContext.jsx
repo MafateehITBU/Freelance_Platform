@@ -15,7 +15,18 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
-  const [notifications, setNotifications] = useState([]);  // New state for notifications
+  const [notifications, setNotifications] = useState([]);
+  const [userInteracted, setUserInteracted] = useState(false);
+
+  // Detect user interaction once
+  useEffect(() => {
+    const handleInteraction = () => {
+      setUserInteracted(true);
+      window.removeEventListener('click', handleInteraction);
+    };
+    window.addEventListener('click', handleInteraction);
+    return () => window.removeEventListener('click', handleInteraction);
+  }, []);
 
   const fetchUserData = async (userId) => {
     try {
@@ -28,8 +39,7 @@ export const AuthProvider = ({ children }) => {
         },
       };
 
-      const endpoint = `/admin/${userId}`
-
+      const endpoint = `/admin/${userId}`;
       const response = await axiosInstance.get(endpoint, config);
       if (!response.data) return;
 
@@ -41,6 +51,33 @@ export const AuthProvider = ({ children }) => {
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
+    }
+  };
+
+  const handleIncomingNotification = (notification) => {
+    if (notification.notifID && notification.title && notification.message) {
+      setNotifications((prevNotifications) => {
+        const exists = prevNotifications.some(
+          (notif) => notif.notifID === notification.notifID
+        );
+        if (!exists) {
+          const updatedNotifications = [...prevNotifications, notification];
+          localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+          return updatedNotifications;
+        }
+        return prevNotifications;
+      });
+
+      if (userInteracted) {
+        const notificationSound = new Audio('/notification.mp3');
+        notificationSound.play().catch((err) =>
+          console.warn('Unable to play sound:', err)
+        );
+      } else {
+        console.log('User has not interacted with the page yet. Sound skipped.');
+      }
+    } else {
+      console.log('Received invalid notification, ignoring...', notification);
     }
   };
 
@@ -68,55 +105,25 @@ export const AuthProvider = ({ children }) => {
 
         socketInstance.on('connect', () => {
           console.log('Socket connected:', socketInstance.id);
-          socketInstance.emit('register', { userId: id });
+          console.log('Registering socket with ID:', id);
+          socketInstance.emit('register', { userId: id, role: 'admin' });
         });
 
-        // Listen for new notifications from the server
-        socketInstance.on('new-notification', (notification) => {
-          // Ensure that the notification is valid and has a notifID
-          if (notification.notifID && notification.title && notification.message) {
-            setNotifications((prevNotifications) => {
-              // Check if the notification already exists (based on notifID)
-              const exists = prevNotifications.some(
-                (notif) => notif.notifID === notification.notifID
-              );
-
-              // If it doesn't exist, add it
-              if (!exists) {
-                const updatedNotifications = [...prevNotifications, notification];
-                localStorage.setItem('notifications', JSON.stringify(updatedNotifications)); // Save to localStorage
-                return updatedNotifications;
-              }
-
-              // If it exists, return the previous notifications without adding the duplicate
-              return prevNotifications;
-            });
-
-            // Play the notification sound when a new notification is received
-            const notificationSound = new Audio('/notification.mp3');
-            notificationSound.play();
-          } else {
-            console.log('Received invalid notification, ignoring...', notification);
-          }
-        });
+        socketInstance.on('new-notification', handleIncomingNotification);
       } catch (error) {
         console.error('Error initializing user:', error);
         Cookie.remove('token');
       } finally {
-        setLoading(false); // only after everything's done
+        setLoading(false);
       }
     };
 
     initializeUser();
-  }, []);
+  }, [userInteracted]);
 
   const login = async (email, password) => {
     try {
-      const response = await axiosInstance.post('/admin/login', {
-        email,
-        password,
-      });
-
+      const response = await axiosInstance.post('/admin/login', { email, password });
       Cookie.set('token', response.data.token, { expires: 1 });
 
       const decoded = jwtDecode(response.data.token);
@@ -124,42 +131,16 @@ export const AuthProvider = ({ children }) => {
 
       await fetchUserData(id);
 
-      const socketInstance = io('http://localhost:8000');
+      const socketInstance = io('http://localhost:5001');
       setSocket(socketInstance);
 
       socketInstance.on('connect', () => {
         console.log('Socket connected:', socketInstance.id);
-        socketInstance.emit('register', { userId: id });
+        console.log('Registering socket with ID:', id);
+        socketInstance.emit('register', { userId: id, role: 'admin' });
       });
 
-      // Listen for new notifications from the server
-      socketInstance.on('new-notification', (notification) => {
-        // Ensure that the notification is valid and has a notifID
-        if (notification.notifID && notification.title && notification.message) {
-          setNotifications((prevNotifications) => {
-            // Check if the notification already exists (based on notifID)
-            const exists = prevNotifications.some(
-              (notif) => notif.notifID === notification.notifID
-            );
-
-            // If it doesn't exist, add it
-            if (!exists) {
-              const updatedNotifications = [...prevNotifications, notification];
-              localStorage.setItem('notifications', JSON.stringify(updatedNotifications)); // Save to localStorage
-              return updatedNotifications;
-            }
-
-            // If it exists, return the previous notifications without adding the duplicate
-            return prevNotifications;
-          });
-
-          // Play the notification sound when a new notification is received
-          const notificationSound = new Audio('/notification.mp3');
-          notificationSound.play();
-        } else {
-          console.log('Received invalid notification, ignoring...', notification);
-        }
-      });
+      socketInstance.on('new-notification', handleIncomingNotification);
 
       return response.data;
     } catch (error) {
@@ -170,12 +151,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     Cookie.remove('token');
-    setUser({
-      id: null,
-      name: null,
-      email: null,
-      image: null,
-    });
+    setUser({ id: null, name: null, email: null, image: null });
     if (socket) {
       socket.disconnect();
       console.log('Socket disconnected on logout');

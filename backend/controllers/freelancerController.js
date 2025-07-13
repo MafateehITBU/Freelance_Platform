@@ -13,6 +13,8 @@ import {
     verifyOTPMatch,
 } from "../utils/otp.js";
 import { transporter } from "../utils/nodemailer.js";
+import { sendNotificationToAdmins, sendNotificationToFreelancer } from '../utils/notificationSocket.js';
+import crypto from 'crypto';
 
 /**-----------------------------------------
  *  @desc Add a new Freelancer
@@ -91,6 +93,16 @@ export const addFreelancer = async (req, res) => {
             balance: 0
         });
         await wallet.save();
+
+        // Emit a notification to all admins
+        const notifID = crypto.randomUUID();
+        sendNotificationToAdmins({
+            notifID,
+            title: 'New Registration',
+            message: 'A new freelancer registered',
+            createdAt: new Date(),
+            route: '/freelancers',
+        });
 
         res.status(201).json({
             message: "Freelancer registered successfully.",

@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import http from 'http';
 import { Server } from 'socket.io';
 import { chatSocket } from './utils/socketChat.js';
+import { notificationSocket } from './utils/notificationSocket.js';
 
 // Import config and database connection
 import connectDB from './config/database.js';
@@ -44,7 +45,10 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
   }
 });
+// Attach io to global for use in other modules
+global._io = io;
 chatSocket(io);
+notificationSocket(io);
 
 // Middleware
 app.use(helmet());

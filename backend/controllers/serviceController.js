@@ -4,7 +4,8 @@ import SubCategory from "../models/Subcategory.js";
 import Freelancer from "../models/Freelancer.js";
 import AddOn from "../models/AddOn.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
-
+import { sendNotificationToAdmins, sendNotificationToFreelancer } from '../utils/notificationSocket.js';
+import crypto from 'crypto';
 
 /**-------------------------------------
  * @desc Add a new service
@@ -87,6 +88,16 @@ export const addService = async (req, res) => {
             freelancer: freelancerId,
             expectedDeliveryTime,
             addOn: addOnIds,
+        });
+
+        // Emit notification to admins
+        const notifID = crypto.randomUUID();
+        sendNotificationToAdmins({
+            notifID,
+            title: 'New Service',
+            message: 'A new service is added',
+            createdAt: new Date(),
+            route: '/services',
         });
 
         const savedService = await service.save();

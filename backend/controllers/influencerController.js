@@ -13,6 +13,8 @@ import {
     verifyOTPMatch,
 } from "../utils/otp.js";
 import { transporter } from "../utils/nodemailer.js";
+import { sendNotificationToAdmins, sendNotificationToFreelancer } from '../utils/notificationSocket.js';
+import crypto from 'crypto';
 
 /**-----------------------------------------
  *  @desc Add a new Influencer
@@ -87,6 +89,16 @@ export const addInfluencer = async (req, res) => {
         });
 
         await newInfluencer.save();
+
+        // Emit a notification to all admins
+        const notifID = crypto.randomUUID();
+        sendNotificationToAdmins({
+            notifID,
+            title: 'New Registration',
+            message: 'A new influencer registered',
+            createdAt: new Date(),
+            route: '/influencers',
+        });
 
         res.status(201).json({
             message: "Influencer registered successfully.",
