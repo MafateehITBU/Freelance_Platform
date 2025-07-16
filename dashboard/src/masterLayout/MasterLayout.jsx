@@ -265,7 +265,7 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:text-box'
+                      icon='material-symbols:category-rounded'
                       className='menu-icon'
                     />
                     <span>Categories</span>
@@ -279,7 +279,7 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:text-box'
+                      icon='material-symbols:medical-services-outline'
                       className='menu-icon'
                     />
                     <span>Services</span>
@@ -293,7 +293,7 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:text-box'
+                      icon='material-symbols:subscriptions-outline-rounded'
                       className='menu-icon'
                     />
                     <span>Subscription Plans</span>
@@ -307,7 +307,7 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:text-box'
+                      icon='material-symbols:order-approve-outline'
                       className='menu-icon'
                     />
                     <span>Orders</span>
@@ -321,7 +321,7 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:text-box'
+                      icon='material-symbols:18-up-rating-outline-rounded'
                       className='menu-icon'
                     />
                     <span>Ratings</span>
@@ -335,7 +335,7 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:text-box'
+                      icon='material-symbols:post-add-rounded'
                       className='menu-icon'
                     />
                     <span>Posts</span>
@@ -349,7 +349,7 @@ const MasterLayout = ({ children }) => {
                     className={(navData) => (navData.isActive ? "active-page" : "")}
                   >
                     <Icon
-                      icon='line-md:text-box'
+                      icon='material-symbols:account-balance-wallet-outline'
                       className='menu-icon'
                     />
                     <span>Wallets</span>

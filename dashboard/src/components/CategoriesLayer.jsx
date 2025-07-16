@@ -50,7 +50,7 @@ const CategoriesLayer = () => {
     const columns = React.useMemo(() => [
         {
             Header: '#',
-            accessor: (_row, i) => i + 1,
+            Cell: ({ row }) => row.index + 1 + pageIndex * pageSize,
         },
         {
             Header: 'Photo',
@@ -64,13 +64,40 @@ const CategoriesLayer = () => {
             ),
         },
         { Header: 'Name', accessor: row => row.name || '-' },
-        { Header: 'Description', accessor: row => row.description || '-' },
+        {
+            Header: 'Description',
+            accessor: row => row.description || '-',
+            Cell: ({ value }) => (
+                <span
+                    style={{
+                        display: 'block',
+                        maxWidth: '200px',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                    }}
+                >
+                    {value}
+                </span>
+            )
+        },
         {
             Header: 'Subcategories',
             accessor: row =>
                 row.subcategories?.length
                     ? row.subcategories.map(sub => sub.name).join(', ')
                     : '-',
+            Cell: ({ value }) => (
+                <span
+                    style={{
+                        display: 'block',
+                        maxWidth: '200px',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                    }}
+                >
+                    {value}
+                </span>
+            )
         },
         {
             Header: 'Actions',
@@ -105,14 +132,20 @@ const CategoriesLayer = () => {
         nextPage,
         previousPage,
         gotoPage,
-        state: { pageIndex, globalFilter },
+        setPageSize,
+        state: { pageIndex, pageSize, globalFilter },
         setGlobalFilter,
     } = useTable(
-        { columns, data: categories, initialState: { pageSize: 10 } },
+        {
+            columns,
+            data: categories,
+            initialState: { pageSize: 5, pageIndex: 0 },
+        },
         useGlobalFilter,
         useSortBy,
         usePagination
     );
+
 
     return (
         <div className="card basic-data-table" style={{ minHeight: '65vh' }}>

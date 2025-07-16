@@ -245,7 +245,7 @@ const ProfilePageLayer = () => {
                     />
                     <div className="pb-24 ms-16 mb-24 me-16  mt--100">
                         <div className="text-center border border-top-0 border-start-0 border-end-0">
-                            <div className="w-120-px h-120-px rounded-circle overflow-hidden mb-16">
+                            <div className="w-120-px h-120-px rounded-circle overflow-hidden mb-16 position-relative mx-auto">
                                 {loading ? (
                                     <div className="w-100 h-100 bg-neutral-200 animate-pulse" />
                                 ) : (

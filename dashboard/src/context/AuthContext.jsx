@@ -104,8 +104,6 @@ export const AuthProvider = ({ children }) => {
         setSocket(socketInstance);
 
         socketInstance.on('connect', () => {
-          console.log('Socket connected:', socketInstance.id);
-          console.log('Registering socket with ID:', id);
           socketInstance.emit('register', { userId: id, role: 'admin' });
         });
 
@@ -135,8 +133,6 @@ export const AuthProvider = ({ children }) => {
       setSocket(socketInstance);
 
       socketInstance.on('connect', () => {
-        console.log('Socket connected:', socketInstance.id);
-        console.log('Registering socket with ID:', id);
         socketInstance.emit('register', { userId: id, role: 'admin' });
       });
 
